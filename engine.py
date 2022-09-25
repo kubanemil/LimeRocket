@@ -48,25 +48,6 @@ class Engine:
 
         return results
 
-
-
-    # #for ideal gas:
-    # def At_ideal(self):
-    #     R = 8.314; g = 9.8
-    #     Pt = self.throat_pressure*(10**5)
-    #     sqrt_ix = (R*self.throat_temp)/(self.gamma*g)
-    #     return (self.mdot/Pt) * (sqrt_ix**(1/2))
-    #
-    # def At2(self):
-    #     Pt = self.throat_pressure
-    #     mdot = self.mdot
-    #     q = self.throat_dens
-    #     y = self.gamma
-    #     Cd = 0.8
-    #     y_ix = (2/(y+1))**((y+1)/(y-1))
-    #     sqrt_ix = (2*q*Pt*y_ix)**0.5
-    #     return mdot/(Cd*sqrt_ix)
-
     @property
     def throat_area(self):
         Pc = self.ch_pressure * 100000; y = self.gamma
@@ -79,14 +60,6 @@ class Engine:
         fourth = (y + 1) / (y - 1)
         return first * (second / (third ** fourth)) ** 0.5
 
-
-    #ratio of exit area (Ae) to throat area(At) = Ae/At
-    # def ideal_Ae_At(self):
-    #     Ma = self.exit_mach
-    #     y = self.gamma
-    #     first = 1 + (((y-1)/2)*(Ma**2))
-    #     y_ix = (y+1)/2
-    #     return (1/Ma)*((first/y_ix)**(y_ix/(y-1)))
 
     def Ae_At(self):
         k = self.gamma
