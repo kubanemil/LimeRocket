@@ -1,4 +1,4 @@
-from math import tan, pi
+from math import tan, pi, e, log
 
 def A_to_R(A):
     return (A/3.14159)**(0.5)
@@ -13,6 +13,3 @@ def A_to_D(A):
 def D_to_A(D):
     return (3.14159 * (D**2))/4
 
-
-a = tan(15*pi/180)
-print(a)

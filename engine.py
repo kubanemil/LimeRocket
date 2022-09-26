@@ -4,7 +4,6 @@ estimating the sizing of the engine.
 """
 # TODO: Create a method to draw a rocket scheme with valid proportions
 # TODO: Estimate how fast will the rocket reach to it's critical point of heating.
-# TODO: Estimate the thickness of the engine.
 
 from math_tools import *
 from CEA_Wrap import Fuel, Oxidizer, RocketProblem
@@ -17,6 +16,7 @@ class Engine:
         self.o_f = 1    # oxidizer to fuel ratio
         self.ch_radius = ch_radius  # m
         self.ch_area = R_to_A(self.ch_radius)   # m2
+        self.ch_length = 0.1
         create_properties(self)
         create_engine_sizes(self)
         self.thrust = self.exit_vel * self.mdot
@@ -32,21 +32,14 @@ class Engine:
 
     def total_mass(self):
         total_surarea = self.ch_surarea + self.th_nozzle_surarea + self.exit_nozzle_surarea
-        dens = 7900 # kg/m3
-        t = self.thickness
+        dens = 7900     # kg/m3
+        t = self.thickness  # meters
         return round(total_surarea*t*dens, 3)
 
     def __repr__(self):
-        return f"Engine's Thrust: {round(self.thrust/9.8, 2)} kg.\n" + \
-               f"Engine's exit velocity: {round(self.exit_vel, 2)} m/s.\n" + \
-            f"Engine's chamber pressure and temperature: {self.ch_pressure} bar, {self.ch_temp} K.\n" + \
+        return f"Thrust: {round(self.thrust/9.8, 2)} kg.\n" + \
+               f"Exit velocity: {round(self.exit_vel, 2)} m/s.\n" + \
+            f"Chamber pressure and temperature: {self.ch_pressure} bar, {self.ch_temp} K.\n" + \
             f"Specific impulse, sea-level: {round(self.isp, 2)} seconds."
 
-engine1 = Engine()
-print(engine1)
-print(engine1.exit_mach, engine1.gamma, engine1.exit_son)
-print(engine1.Ae_At)
 
-print(engine1.th_area ** 10000)
-print(engine1.exit_nozzle_surarea)
-print(engine1.total_mass(), "KG")

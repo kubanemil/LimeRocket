@@ -1,7 +1,6 @@
 from math_tools import *
 
 
-
 def create_properties(self):
     results = self.results()
     self.exit_vel = results.son * results.mach;
@@ -34,7 +33,6 @@ def create_engine_sizes(self):
 
     self.exit_length = (self.exit_radius-self.th_radius)/(tan(15*pi/180))
     self.th_length = (self.ch_radius - self.th_radius) / (tan(30 * pi / 180))
-    self.ch_length = 0.1 #meters
 
     self.exit_nozzle_surarea = nozzle_surface_area(self.th_radius, self.exit_radius, a=15)
     self.th_nozzle_surarea = nozzle_surface_area(self.th_radius, self.ch_radius, a=30)
