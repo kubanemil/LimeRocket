@@ -41,5 +41,3 @@ class Engine:
                f"Exit velocity: {round(self.exit_vel, 2)} m/s.\n" + \
             f"Chamber pressure and temperature: {self.ch_pressure} bar, {self.ch_temp} K.\n" + \
             f"Specific impulse, sea-level: {round(self.isp, 2)} seconds."
-
-

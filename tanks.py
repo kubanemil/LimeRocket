@@ -8,9 +8,32 @@ class Tanks:
         self.radius = radius
         self.thick = 10**(-3)  # thickness of the walls.
         self.mdot = 0.5  # kg/s
+        self.pipes_properties()
 
     # TODO: include pressure to mdot equation.
     # todo: returns pressure inside pressure tank.
+
+    def pipes_properties(self):
+        self.pipe_radius = 2 * (10**(-3))
+        self.pipe_length = 1
+
+    def p_diff(self):
+        # water: w = 0.0010518 Pas*s
+        w = 0.00164     # Pa*s
+        d = 800  # kg/s
+        L = self.pipe_length
+        R = self.pipe_radius
+        mdot = self.mdot
+        return (8 * w * L * mdot) / (3.14 * d * (R ** 4))
+
+    def get_mdot(self):  # mass rate flow
+        w = 0.00164     # Pa*s
+        d = 800  # kg/s
+        L = self.pipe_length
+        R = self.pipe_radius
+        p_diff = 5 * (10**5)
+        return (3.14 * d * (R ** 4) * (p_diff)) / (8 * w * L)
+
     def lox_mass(self):
         dens = 1141     # kg/m3
         area = R_to_A(self.radius)
@@ -52,3 +75,5 @@ p = tank1.lox_boil_pres(T=120)
 t = tank1.lox_boil_temp(P=10*(10**5))
 print(p/(10**5))
 print(t)
+print(tank1.p_diff()/100000)
+print(tank1.get_mdot())
