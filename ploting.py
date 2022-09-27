@@ -27,12 +27,12 @@ def H(v, t=btime):
 print("Bornout velocity:", v(), "m/s")
 print("Coast velocity:", H(v()), "meters")
 
-# mrs = np.array([i for i in range(5, 100)])
+mrs = np.array([i for i in range(5, 100)])
 
-# vs = np.array([v(u, Mt, mr, t) for mr in mrs])
+vs = np.array([mr*mr for mr in mrs])
 # Hs = np.array([H(V, t) for V in vs])
-# plt.plot(mrs, Hs)
-# # plt.show()
+plt.plot(mrs, vs)
+plt.show()
 # print(Hs[-1])
 # for i in range(1, 20):
 #     v1 = v(u, Mt, Mr, t=i)

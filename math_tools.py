@@ -13,3 +13,11 @@ def A_to_D(A):
 def D_to_A(D):
     return (3.14159 * (D**2))/4
 
+def scaled_list(lst):
+    new_lst = []
+    for i in range(len(lst)):
+        if i == 0:
+            new_lst.append(lst[i])
+        else:
+            new_lst.append(lst[i] + new_lst[i - 1])
+    return new_lst
