@@ -6,5 +6,5 @@ from engine import Engine
 
 eng = Engine()
 eng.plot_engine()
-eng.lengths
-eng.radiuses
+print(eng.lengths)
+print(eng.radiuses)

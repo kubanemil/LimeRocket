@@ -8,7 +8,7 @@ estimating the sizing of the engine.
 from math_tools import *
 from CEA_Wrap import Fuel, Oxidizer, RocketProblem
 import matplotlib.pyplot as plt
-
+import numpy as np
 
 class Engine:
     def __init__(self, ch_pressure=5, mdot=0.5, ch_radius=0.05):
@@ -18,9 +18,11 @@ class Engine:
         self.ch_radius = ch_radius  # m
         self.ch_area = R_to_A(self.ch_radius)   # m2
         self.ch_length = 0.1
+        self.thickness = 2 * (10 ** (-3))  # meters
+        self.a_exit = 12   # degree
+        self.a_throat = 25    # degree
         self.create_properties()
         self.create_engine_sizes()
-        self.thrust = self.exit_vel * self.mdot
 
     def results(self):
         results = RocketProblem(pressure=self.ch_pressure, materials=[Fuel('RP-1'), Oxidizer('O2(L)', temp=100)], \
@@ -38,13 +40,22 @@ class Engine:
         return round(total_surarea*t*dens, 3)
 
     def plot_engine(self):
-        lengths_cm = self.lengths*100
-        radiuses_cm = self.radiuses*100
-        plt.axis([0, 20, -11, 11])
-        plt.axis('equal')
-        plt.plot(lengths_cm, radiuses_cm)
-        mradiuses = -radiuses_cm
-        plt.plot(lengths_cm, mradiuses)
+        lengths_cm = self.lengths*100; radiuses_cm = self.radiuses*100
+        mng = plt.get_current_fig_manager()
+        mng.resize(*mng.window.maxsize())
+        plt.axis([0, max(lengths_cm)+3, -(max(radiuses_cm)+1), max(radiuses_cm)+1])
+        plt.axis('scaled')
+        plt.plot(lengths_cm, radiuses_cm, "grey")
+        plt.plot(lengths_cm, -radiuses_cm, "grey")
+        plt.figtext(0.2, 0.93, s=f"Thrust={round(self.thrust/9.8, 2)} kg", fontweight='bold', fontsize='12')
+        plt.figtext(0.2, 0.9, s=f"Mass flow={round(self.mdot, 2)} kg/s", fontweight='bold', fontsize='12')
+        plt.figtext(0.4, 0.9, s=f"Exit velocity={round(self.exit_vel, 2)} m/s", fontweight='bold', fontsize='12')
+        plt.figtext(0.3, 0.5, s=f"{round(self.ch_pressure, 2)} bar", fontweight='bold', fontsize='12')
+        plt.figtext(0.3, 0.47, s=f"{round(self.ch_temp, 2)} K", fontweight='bold', fontsize='12')
+        plt.figtext(0.63, 0.5, s=f"{round(self.th_pressure, 2)} bar", fontweight='bold', fontsize='12')
+        plt.figtext(0.63, 0.47, s=f"{round(self.th_temp, 2)} K", fontweight='bold', fontsize='12')
+        plt.figtext(0.75, 0.5, s=f"{round(self.exit_pressure, 2)} bar", fontweight='bold', fontsize='12')
+        plt.figtext(0.75, 0.47, s=f"{round(self.exit_temp, 2)} K", fontweight='bold', fontsize='12')
         plt.xlabel("Length, cm")
         plt.ylabel("Radius, cm")
 
@@ -73,30 +84,29 @@ class Engine:
         self.gamma = results.gamma;
         self.molar_mass = results.mw / 1000;
         self.isp = results.isp
+        self.thrust = self.exit_vel * self.mdot
 
-    def nozzle_surface_area(th_radius, R, a):
+    def nozzle_surface_area(self, th_radius, R, a):
         tana = tan(a * pi / 180)  # degree divergence angle
         return (pi / tana) * ((R ** 2) - (th_radius ** 2))
 
     def create_engine_sizes(self):
-        self.Ae_At = Ae_At(self)
-        self.th_area = th_area(self)
-        self.thickness = 2 * (10 ** (-3))  # meters
+        self.Ae_At = self.Ae_At()
+        self.th_area = self.th_area()
         self.exit_area = self.Ae_At * self.th_area
         self.exit_radius = A_to_R(self.exit_area)
         self.th_radius = A_to_R(self.th_area)
 
-        a_exit = 15
-        a_throat = 45
-        self.exit_length = (self.exit_radius - self.th_radius) / (tan(a_exit * pi / 180))
-        self.th_length = (self.ch_radius - self.th_radius) / (tan(a_throat * pi / 180))
 
-        self.exit_nozzle_surarea = nozzle_surface_area(self.th_radius, self.exit_radius, a=a_exit)
-        self.th_nozzle_surarea = nozzle_surface_area(self.th_radius, self.ch_radius, a=a_throat)
+        self.exit_length = (self.exit_radius - self.th_radius) / (tan(self.a_exit * pi / 180))
+        self.th_length = (self.ch_radius - self.th_radius) / (tan(self.a_throat * pi / 180))
+
+        self.exit_nozzle_surarea = self.nozzle_surface_area(self.th_radius, self.exit_radius, a=self.a_exit)
+        self.th_nozzle_surarea = self.nozzle_surface_area(self.th_radius, self.ch_radius, a=self.a_throat)
         self.ch_surarea = (2 * pi * self.ch_radius * self.ch_length) + (pi * (self.ch_radius ** 2))
 
-        self.radiuses = np.array([self.ch_radius, self.ch_radius, self.th_radius, self.exit_radius])
-        self.lengths = np.array(scaled_list([0, self.ch_length, self.th_length, self.exit_length]))
+        self.radiuses = np.array([self.ch_radius, self.ch_radius, self.th_radius, self.exit_radius, 0])
+        self.lengths = np.array(scaled_list([0, self.ch_length, self.th_length, self.exit_length, 0]))
 
     def Ae_At(self):
         k = self.gamma
