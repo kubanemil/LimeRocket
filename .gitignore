@@ -5,4 +5,7 @@
 !.gitkeep
 !*.py
 !*.png
+!*.jpg
+!*.jpeg
+!*.txt
 !*/
