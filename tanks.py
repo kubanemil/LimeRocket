@@ -1,13 +1,14 @@
 from math_tools import *
 
 class Tanks:
-    def __init__(self, radius=0.07):
-        self.ox_height = 0.5
-        self.fuel_height = 0.5
+    def __init__(self, radius=0.07, fuel_height=0.5, o_f=1):
+        self.o_f = o_f
+        self.fuel_height = fuel_height
         self.pres_height = 0.5
         self.radius = radius
         self.thick = 10**(-3)  # thickness of the walls.
         self.mdot = 0.5  # kg/s
+        self.per = 0.8  # part of tank it will take
         self.pipes_properties()
 
     # TODO: include pressure to mdot equation.
@@ -34,19 +35,27 @@ class Tanks:
         p_diff = 5 * (10**5)
         return (3.14 * d * (R ** 4) * (p_diff)) / (8 * w * L)
 
+    def P(self, h_diff, Po_gas, dens, ho, h_gas):
+        if h_diff > ho:
+            print("h_diff can't be greater than ho!")
+        else:
+            return Po_gas*(h_gas/(h_gas+h_diff)) + dens*10*(ho-h_diff)
+
+    @property
+    def lox_height(self):
+        return (800/1141)*self.o_f*self.fuel_height
+
     def lox_mass(self):
         dens = 1141     # kg/m3
         area = R_to_A(self.radius)
-        h = self.ox_height
-        per = 0.8  # part of tank it will take
-        return per*dens*area*h
+        h = self.lox_height
+        return self.per*dens*area*h
 
     def fuel_mass(self):
         dens = 800     # kg/m3
         area = R_to_A(self.radius)
         h = self.fuel_height
-        per = 0.8  # part of tank it will take
-        return per*dens*area*h
+        return self.per*dens*area*h
 
     def lox_param(self):
         return {
@@ -68,12 +77,22 @@ class Tanks:
         inx = (R/L) * log(P/Po)
         return 1/ ((1/To)-inx)
 
+    def tanks_mass(self):
+        Per = 2*pi*self.radius
+        A = R_to_A(self.radius)
+        f_v = (Per*self.fuel_height + 2*A) * self.thick
+        ox_v = (Per*self.lox_height + 2*A) * self.thick
+        return 7900*(f_v+ox_v)
 
+    def total_mass(self):
+        return self.tanks_mass() + self.fuel_mass() + self.lox_mass()
 
-tank1 = Tanks()
-p = tank1.lox_boil_pres(T=120)
-t = tank1.lox_boil_temp(P=10*(10**5))
-print(p/(10**5))
-print(t)
-print(tank1.p_diff()/100000)
-print(tank1.get_mdot())
+if __name__ == "__main__":
+    tank1 = Tanks()
+    p = tank1.lox_boil_pres(T=120)
+    t = tank1.lox_boil_temp(P=10*(10**5))
+
+    print(tank1.P(h_diff=0, Po_gas=500000, h_gas=0.2, ho=0.5, dens=1000))
+    print(tank1.P(h_diff=0.5, Po_gas=500000, h_gas=0.2, ho=0.5, dens=1000))
+    print(to_bar(tank1.p_diff()), "bar")
+    print(tank1.total_mass())

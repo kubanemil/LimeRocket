@@ -3,13 +3,16 @@ import numpy as np
 from math import e
 from rockets import Rocket
 
-width = 10
-rocket = Rocket(tank_h=100, ox_is_liquid=True, lox_to_fuel=1, width=width)
-dmdt = 0.0134 #kg/s
-u = 800 #m/s
-M_init = 0.0450 #kg
-M_pt = 6.9333*0.01*M_init #kg
-k = 0.00023
+
+width = 0.14 #meters
+rocket = Rocket(width=width, others=2, fuel_height=0.9)
+engine = rocket.Engine()
+tanks = rocket.Tanks()
+dmdt = engine.mdot
+u = engine.exit_vel
+M_init = rocket.total_mass()
+M_pt = tanks.lox_mass()+tanks.fuel_mass() #kg
+k = rocket.K()
 
 print(M_init, M_pt, k)
 def hc_vt_bt_th(dmdt=dmdt, u=u, k=k, M_init=M_init, M_pt=M_pt): #equation is valid
@@ -26,6 +29,9 @@ def hc_vt_bt_th(dmdt=dmdt, u=u, k=k, M_init=M_init, M_pt=M_pt): #equation is val
     hc = (Mc / (2 * k)) * np.log(ln_inx)
     return [hc, vt, btime, Thrust]
 
+def g(height_km):
+    return 9.8/(1+(2*height_km/6371))
+
 dmdts = []
 btimes = []
 velocities = []
@@ -38,5 +44,5 @@ us = []
 
 print(hc_vt_bt_th())
 print(hc_vt_bt_th(k=10**(-15)))
-# plt.plot(dmdts, heights)
-# plt.show()
+g = g(hc_vt_bt_th()[0]/1000)
+print(g)

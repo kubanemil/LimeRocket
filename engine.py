@@ -11,16 +11,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 class Engine:
-    def __init__(self, ch_pressure=5, mdot=0.5, ch_radius=0.05):
+    def __init__(self, ch_pressure=5, mdot=0.5, ch_radius=0.06):
         self.ch_pressure = ch_pressure  # bar
         self.mdot = mdot    # kg/s
         self.o_f = 1    # oxidizer to fuel ratio
         self.ch_radius = ch_radius  # m
         self.ch_area = R_to_A(self.ch_radius)   # m2
         self.ch_length = 0.1
-        self.thickness = 2 * (10 ** (-3))  # meters
+        self.thickness = 4 * (10 ** (-3))  # meters
         self.a_exit = 12   # degree
-        self.a_throat = 25    # degree
+        self.a_throat = 30    # degree
+        self.insul_thick = 0.2  # cm
         self.create_properties()
         self.create_engine_sizes()
 
@@ -45,11 +46,14 @@ class Engine:
         mng.resize(*mng.window.maxsize())
         plt.axis([0, max(lengths_cm)+3, -(max(radiuses_cm)+1), max(radiuses_cm)+1])
         plt.axis('scaled')
-        plt.plot(lengths_cm, radiuses_cm, "grey")
-        plt.plot(lengths_cm, -radiuses_cm, "grey")
+        plt.plot(lengths_cm, radiuses_cm, "red")
+        plt.plot(lengths_cm, -radiuses_cm, "red")
+        plt.plot(lengths_cm, radiuses_cm+self.insul_thick, "black")
+        plt.plot(lengths_cm, -(radiuses_cm+self.insul_thick), "black")
         plt.figtext(0.2, 0.93, s=f"Thrust={round(self.thrust/9.8, 2)} kg", fontweight='bold', fontsize='12')
         plt.figtext(0.2, 0.9, s=f"Mass flow={round(self.mdot, 2)} kg/s", fontweight='bold', fontsize='12')
-        plt.figtext(0.4, 0.9, s=f"Exit velocity={round(self.exit_vel, 2)} m/s", fontweight='bold', fontsize='12')
+        plt.figtext(0.4, 0.93, s=f"Exit velocity={round(self.exit_vel, 2)} m/s", fontweight='bold', fontsize='12')
+        plt.figtext(0.4, 0.9, s=f"Engine's mass={round(self.total_mass(), 2)} kg", fontweight='bold', fontsize='12')
         plt.figtext(0.3, 0.5, s=f"{round(self.ch_pressure, 2)} bar", fontweight='bold', fontsize='12')
         plt.figtext(0.3, 0.47, s=f"{round(self.ch_temp, 2)} K", fontweight='bold', fontsize='12')
         plt.figtext(0.63, 0.5, s=f"{round(self.th_pressure, 2)} bar", fontweight='bold', fontsize='12')
@@ -107,6 +111,7 @@ class Engine:
 
         self.radiuses = np.array([self.ch_radius, self.ch_radius, self.th_radius, self.exit_radius, 0])
         self.lengths = np.array(scaled_list([0, self.ch_length, self.th_length, self.exit_length, 0]))
+        self.total_length = self.ch_length + self.th_length + self.exit_length
 
     def Ae_At(self):
         k = self.gamma

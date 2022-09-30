@@ -21,3 +21,6 @@ def scaled_list(lst):
         else:
             new_lst.append(lst[i] + new_lst[i - 1])
     return new_lst
+
+def to_bar(Pascal):
+    return Pascal/(10**5)
