@@ -5,7 +5,7 @@ estimating the sizing of the engine.
 # TODO: Create a method to draw a rocket scheme with valid proportions
 # TODO: Estimate how fast will the rocket reach to it's critical point of heating.
 
-from math_tools import *
+from tools import *
 from CEA_Wrap import Fuel, Oxidizer, RocketProblem
 import matplotlib.pyplot as plt
 import numpy as np
@@ -111,6 +111,8 @@ class Engine:
 
         self.radiuses = np.array([self.ch_radius, self.ch_radius, self.th_radius, self.exit_radius, 0])
         self.lengths = np.array(scaled_list([0, self.ch_length, self.th_length, self.exit_length, 0]))
+        self.reversed_radiuses = np.array([self.exit_radius, self.th_radius, self.ch_radius, self.ch_radius, 0])
+        self.reversed_lengths = np.array(scaled_list([0, self.exit_length, self.th_length, self.ch_length, 0]))
         self.total_length = self.ch_length + self.th_length + self.exit_length
 
     def Ae_At(self):
