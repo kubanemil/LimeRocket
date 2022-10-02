@@ -28,10 +28,10 @@ def to_bar(Pascal):
     return Pascal/(10**5)
 
 
-def plot_part(length_list, radius_list, fill_color, line_color="black"):
+def plot_part(length_list, radius_list, fill_color="white", line_color="black"):
     lengths_cm = np.array(length_list) * 100
     radiuses_cm = np.array(radius_list) * 100
-    plt.plot(lengths_cm, radiuses_cm, line_color)
-    plt.plot(lengths_cm, -radiuses_cm, line_color)
+    plt.plot(lengths_cm, radiuses_cm, line_color, linewidth=0.5)
+    plt.plot(lengths_cm, -radiuses_cm, line_color, linewidth=0.5)
     plt.fill_between(lengths_cm, radiuses_cm, color=fill_color)
     plt.fill_between(lengths_cm, -radiuses_cm, color=fill_color)

@@ -1,9 +1,9 @@
 from tools import *
 
 class Tanks:
-    def __init__(self, radius=0.07, fuel_height=0.5, o_f=1):
+    def __init__(self, radius=0.07, tanks_height=1, o_f=1):
         self.o_f = o_f
-        self.fuel_height = fuel_height
+        self.total_height = tanks_height
         self.pres_height = 0.5
         self.radius = radius
         self.thick = 10**(-3)  # thickness of the walls.
@@ -40,6 +40,10 @@ class Tanks:
             print("h_diff can't be greater than ho!")
         else:
             return Po_gas*(h_gas/(h_gas+h_diff)) + dens*10*(ho-h_diff)
+
+    @property
+    def fuel_height(self):
+        return self.total_height/((800*self.o_f/1141)+1)
 
     @property
     def lox_height(self):
