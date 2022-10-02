@@ -32,9 +32,9 @@ class Flight:
     def __repr__(self):
         return f"The maximum height: {self.max_height()/1000} km."
 
-flight = Flight(rocket=Rocket(fuel_height=0.1))
-fuel_heights = [i/10 for i in range(10)]
-flights = [Flight(Rocket(fuel_height=h, radius=0.3)).max_height() for h in fuel_heights]
+flight = Flight(rocket=Rocket(tanks_height=1))
+fuel_heights = [i/10 for i in range(30)]
+flights = [Flight(Rocket(tanks_height=h)).max_height() for h in fuel_heights]
 plt.plot(fuel_heights, flights)
 plt.show()
 print(flight)
