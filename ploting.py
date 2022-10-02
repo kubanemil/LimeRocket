@@ -25,7 +25,7 @@ def H(v, t=btime):
 
 
 print("Bornout velocity:", v(), "m/s")
-print("Coast velocity:", H(v()), "meters")
+print("Coast height:", H(v()), "meters")
 
 mrs = np.array([i for i in range(5, 100)])
 

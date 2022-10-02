@@ -43,6 +43,7 @@ class Rocket():
         if self.total_mass() >= self.Engine().thrust/9.8:
             # raise ValueError("Engine can't lift the rocket!")
             print(self.total_mass(), self.Engine().thrust, "Engine can't lift it!")
+            print(self.radius)
 
     def mass(self, V, d=7900):
         return V * d

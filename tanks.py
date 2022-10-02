@@ -90,6 +90,7 @@ class Tanks:
 
     def prop_mass(self):
         return self.fuel_mass() + self.lox_mass()
+
     def total_mass(self):
         return self.tanks_mass() + self.fuel_mass() + self.lox_mass()
 
