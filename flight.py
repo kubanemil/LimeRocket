@@ -45,12 +45,16 @@ class Flight:
         return f"The maximum height with drag: {self.drag_max_height()/1000} km.\n" + \
             f"The maximum height in drag-free environment: {self.max_height()} km."
 
-# flight = Flight(rocket=Rocket(tanks_height=1))
-tank_radiuses = [i for i in range(1, 15)]
-drag_flights = [Flight(Rocket(radius=r/100, mdot=1)).drag_max_height() for r in tank_radiuses]
-dragfree_flights = [Flight(Rocket(radius=r/100, mdot=1)).max_height() for r in tank_radiuses]
-plt.plot(tank_radiuses, drag_flights, label='with drag force')
-plt.plot(tank_radiuses, dragfree_flights, label='drag free')
+mdot = 1
+tank_radiuses = [i for i in range(1, 20)]
+heights = [0.5, 1, 2]
+for h in heights:
+    rocs = [Rocket(radius=r/100, mdot=mdot, tanks_height=h) for r in tank_radiuses]
+    flights = [Flight(roc).max_height() for roc in rocs]
+    plt.plot(tank_radiuses, flights, label=f"Tanks height: {h} m.")
+
+plt.figtext(0.1, 0.8, f"Mass Flow {mdot}")
+plt.title("Max burn time heights for Drag-Free Flight of the Rocket.")
 plt.legend()
 plt.xlabel("Rocket radius, cm")
 plt.ylabel("Max height, meters")
