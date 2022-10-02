@@ -11,10 +11,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 class Engine:
-    def __init__(self, ch_pressure=5, mdot=0.5, ch_radius=0.06):
+    def __init__(self, ch_pressure=5, mdot=0.5, ch_radius=0.06, o_f=1):
         self.ch_pressure = ch_pressure  # bar
         self.mdot = mdot    # kg/s
-        self.o_f = 1    # oxidizer to fuel ratio
+        self.o_f = o_f    # oxidizer to fuel ratio
         self.ch_radius = ch_radius  # m
         self.ch_area = R_to_A(self.ch_radius)   # m2
         self.ch_length = 0.1
@@ -40,30 +40,36 @@ class Engine:
         t = self.thickness  # meters
         return round(total_surarea*t*dens, 3)
 
-    def plot_engine(self):
+    def plot_engine(self, ix=999, save=False):
         lengths_cm = self.lengths*100; radiuses_cm = self.radiuses*100
-        mng = plt.get_current_fig_manager()
-        mng.resize(*mng.window.maxsize())
-        plt.axis([0, max(lengths_cm)+3, -(max(radiuses_cm)+1), max(radiuses_cm)+1])
+        plt.rcParams["figure.figsize"] = [13.9, 6.5]
+        plt.rcParams["figure.autolayout"] = True
+        plt.figure(ix)
+        plt.axis([0, 30, -8, 8])
         plt.axis('scaled')
         plt.plot(lengths_cm, radiuses_cm, "red")
         plt.plot(lengths_cm, -radiuses_cm, "red")
         plt.plot(lengths_cm, radiuses_cm+self.insul_thick, "black")
         plt.plot(lengths_cm, -(radiuses_cm+self.insul_thick), "black")
-        plt.figtext(0.2, 0.93, s=f"Thrust={round(self.thrust/9.8, 2)} kg", fontweight='bold', fontsize='12')
-        plt.figtext(0.2, 0.9, s=f"Mass flow={round(self.mdot, 2)} kg/s", fontweight='bold', fontsize='12')
-        plt.figtext(0.4, 0.93, s=f"Exit velocity={round(self.exit_vel, 2)} m/s", fontweight='bold', fontsize='12')
-        plt.figtext(0.4, 0.9, s=f"Engine's mass={round(self.total_mass(), 2)} kg", fontweight='bold', fontsize='12')
-        plt.figtext(0.3, 0.5, s=f"{round(self.ch_pressure, 2)} bar", fontweight='bold', fontsize='12')
-        plt.figtext(0.3, 0.47, s=f"{round(self.ch_temp, 2)} K", fontweight='bold', fontsize='12')
-        plt.figtext(0.63, 0.5, s=f"{round(self.th_pressure, 2)} bar", fontweight='bold', fontsize='12')
-        plt.figtext(0.63, 0.47, s=f"{round(self.th_temp, 2)} K", fontweight='bold', fontsize='12')
-        plt.figtext(0.75, 0.5, s=f"{round(self.exit_pressure, 2)} bar", fontweight='bold', fontsize='12')
-        plt.figtext(0.75, 0.47, s=f"{round(self.exit_temp, 2)} K", fontweight='bold', fontsize='12')
+        plt.figtext(0.13, 0.93, s=f"Thrust={round(self.thrust/9.8, 2)} kg", fontsize='12')
+        plt.figtext(0.13, 0.9, s=f"Engine's mass={round(self.total_mass(), 2)} kg", fontsize='12')
+        plt.figtext(0.30, 0.93, s=f"Mass flow={round(self.mdot, 2)} kg/s", fontsize='12')
+        plt.figtext(0.30, 0.9, s=f"O/F ratio={round(self.o_f, 2)}", fontsize='12')
+        plt.figtext(0.45, 0.93, s=f"ISP={round(self.isp, 2)} sec",  fontsize='12')
+        plt.figtext(0.45, 0.9, s=f"Exit velocity={round(self.exit_vel, 2)} m/s", fontsize='12')
+
+        plt.figtext(0.24, 0.53, s=f"{round(self.ch_pressure, 2)} bar", fontsize='11')
+        plt.figtext(0.24, 0.5, s=f"{round(self.ch_temp, 2)} K", fontsize='11')
+        plt.figtext(lengths_cm[-3]/32, 0.53, s=f"{round(self.th_pressure, 2)} bar", fontsize='11')
+        plt.figtext(lengths_cm[-3]/32, 0.5, s=f"{round(self.th_temp, 2)} K", fontsize='11')
+        plt.figtext(lengths_cm[-1]/32, 0.53, s=f"{round(self.exit_pressure, 2)} bar", fontsize='11')
+        plt.figtext(lengths_cm[-1]/32, 0.5, s=f"{round(self.exit_temp, 2)} K", fontsize='11')
         plt.xlabel("Length, cm")
         plt.ylabel("Radius, cm")
-
-        plt.show()
+        if save:
+            plt.savefig(f"engine_plots\\engine{ix}.png")
+        else:
+            plt.show()
 
     def __repr__(self):
         return f"Thrust: {round(self.thrust/9.8, 2)} kg.\n" + \
@@ -134,3 +140,7 @@ class Engine:
         third = (2 / (y + 1));
         fourth = (y + 1) / (y - 1)
         return first * (second / (third ** fourth)) ** 0.5
+
+if __name__ == "__main__":
+    eng = Engine(ch_pressure=5, mdot=0.5    )
+    eng.plot_engine()
