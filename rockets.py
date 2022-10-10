@@ -15,7 +15,7 @@ from tools import *
 from random import shuffle
 
 class Rocket():
-    def __init__(self, tanks_height=1, radius=0.03, others_mass=4, mdot=0.5):
+    def __init__(self, tanks_height=2, radius=0.07, others_mass=4, mdot=1):
         self.mdot = mdot
         self.radius = radius
         self.lthick = 0.001 #meters
@@ -31,7 +31,8 @@ class Rocket():
         self.right_h = self.fing_h/3
         self.fing_w = self.radius*2
         self.fing_num = 4
-        self.check_thrust()
+        self.max_mass = 50 #kg
+        # self.check()
 
     def Tanks(self):
         return Tanks(radius=self.tank_radius, tanks_height=self.tanks_height)
@@ -39,12 +40,16 @@ class Rocket():
     def Engine(self):
         return Engine(ch_radius=self.ch_radius, mdot=self.mdot)
 
-    def check_thrust(self):
+    def check(self):
+        if self.total_mass() > self.max_mass:
+            print(round(self.total_mass(), 2), "kg. ", f"Rocket heavier than {self.max_mass} kg!")
+            return False
         if self.total_mass() >= self.Engine().thrust/9.8:
             # raise ValueError("Engine can't lift the rocket!")
-            print(self.total_mass(), self.Engine().thrust, "Engine can't lift it!")
-            print(self.radius)
-
+            print(round(self.total_mass(), 2), "kg. ", round(self.Engine().thrust/9.8, 2), "kg. ", "Engine can't lift it!")
+            print(round(self.radius*100, 2), "cm.")
+            return False
+        return True
     def mass(self, V, d=7900):
         return V * d
 
@@ -103,7 +108,7 @@ class Rocket():
         plt.rcParams["figure.figsize"] = [13.9, 6.5]
         plt.rcParams["figure.autolayout"] = True
         plt.figure(ix)
-        plt.axis([0, 250, -40, 40])
+        plt.axis([0, 280, -40, 40])
         plt.axis("scaled")
         plot_part(lens['fing'], rads['fing'], fill_color="gray")
         plot_part(lens['base'], rads['base'], fill_color="black")
@@ -142,5 +147,5 @@ if __name__ == "__main__":
     # for i in range(50):
     #     shuffle(rocs)
     #     rocs[i].plot_rocket(i, save=True)
-    roc = Rocket(tanks_height=1)
+    roc = Rocket()
     roc.plot_rocket()

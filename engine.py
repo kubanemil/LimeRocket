@@ -10,6 +10,8 @@ from CEA_Wrap import Fuel, Oxidizer, RocketProblem
 import matplotlib.pyplot as plt
 import numpy as np
 
+
+#CEA verified. #Sizing verified.
 class Engine:
     def __init__(self, ch_pressure=5, mdot=0.5, ch_radius=0.06, o_f=1):
         self.ch_pressure = ch_pressure  # bar
@@ -142,5 +144,8 @@ class Engine:
         return first * (second / (third ** fourth)) ** 0.5
 
 if __name__ == "__main__":
-    eng = Engine(ch_pressure=5, mdot=0.5    )
+    eng = Engine(ch_pressure=5, mdot=1, ch_radius=0.06)
+    print(eng.results())
+    for k, v in zip(eng.__dict__.keys(),eng.__dict__.values()):
+        print(k, "=", v)
     eng.plot_engine()

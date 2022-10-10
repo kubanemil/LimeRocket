@@ -45,16 +45,27 @@ class Flight:
         return f"The maximum height with drag: {self.drag_max_height()/1000} km.\n" + \
             f"The maximum height in drag-free environment: {self.max_height()} km."
 
-mdot = 1
-tank_radiuses = [i for i in range(1, 20)]
-heights = [0.5, 1, 2]
+mdot = 0.5
+tank_radiuses = [i for i in range(1, 15)]
+heights = [1, 2, 3]
+rocket_heights = []
+masses, prop_masses = [], []
 for h in heights:
-    rocs = [Rocket(radius=r/100, mdot=mdot, tanks_height=h) for r in tank_radiuses]
+    rocs = [Rocket(radius=r/100, mdot=mdot, tanks_height=h) for r in tank_radiuses if Rocket(radius=r/100, mdot=mdot, tanks_height=h).check()]
     flights = [Flight(roc).max_height() for roc in rocs]
-    plt.plot(tank_radiuses, flights, label=f"Tanks height: {h} m.")
+    rads = [roc.radius for roc in rocs]
+    prop_masses.append(round(rocs[-1].Tanks().prop_mass(), 1))
+    masses.append(round(rocs[-1].total_mass(), 1))
+    rocket_heights.append(round(rocs[-1].base_h, 1))
+    plt.plot(rads, flights, label=f"Tanks height: {h} m.", marker="o")
+
+print("ROCKET HEIGHT", rocket_heights)
+print("HEIGHT", heights)
+print("MASSES", masses)
+print("PROP MASSES", prop_masses)
 
 plt.figtext(0.1, 0.8, f"Mass Flow {mdot}")
-plt.title("Max burn time heights for Drag-Free Flight of the Rocket.")
+plt.title("Max heights for Drag-Free Flight of the Rocket.")
 plt.legend()
 plt.xlabel("Rocket radius, cm")
 plt.ylabel("Max height, meters")
