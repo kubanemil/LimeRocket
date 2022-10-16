@@ -46,9 +46,9 @@ class Rocket:
         if self.total_mass() > self.max_mass:
             print(round(self.total_mass(), 2), "kg. ", f"Rocket heavier than {self.max_mass} kg!")
             return False
-        if self.total_mass() >= self.engine.thrust/9.8:
+        if self.total_mass() >= self.engine.real_thrust/9.8:
             # raise ValueError("Engine can't lift the rocket!")
-            print(round(self.total_mass(), 2), "kg.", round(self.engine.thrust/9.8, 2), "kg. ", "Engine can't lift it!")
+            print(round(self.total_mass(), 2), "kg.", round(self.engine.real_thrust/9.8, 2), "kg. ", "Engine can't lift it!")
             print(round(self.radius*100, 2), "cm.")
             return False
         return True
@@ -57,8 +57,9 @@ class Rocket:
         return self.base_mass + self.cap_mass + self.fings_mass + self.engine.total_mass() + \
                self.tanks.total_mass() + self.others
 
-    def k(self, drag_const=0.8):
-        return 0.5 * 1.2 * pi * (self.radius ** 2) * drag_const * (10**(-4))
+    def k(self, Cd=0.75):
+        air_dens = 1.2  # kg/m3
+        return (Cd * air_dens * pi / 2) * (self.radius**2)
 
     def burn_time(self):
         return self.tanks.prop_mass()/self.mdot
@@ -100,7 +101,7 @@ class Rocket:
         plot_part(lens['lox_tank'], rads['lox_tank'], fill_color="darkred")
         plt.xlabel("Length, cm")
         plt.ylabel("Radius, cm")
-        plt.figtext(0.06, 0.89, s=f"Thrust={round(self.engine.thrust/9.8, 2)} kg", fontsize='12')
+        plt.figtext(0.06, 0.89, s=f"Thrust={round(self.engine.real_thrust/9.8, 2)} kg", fontsize='12')
         plt.figtext(0.06, 0.85, s=f"ISP={round(self.engine.isp, 2)} sec", fontsize='12')
         plt.figtext(0.21, 0.89, s=f"Total mass={round(self.total_mass(), 2)} kg", fontsize='12')
         plt.figtext(0.21, 0.85, s=f"Propellant mass={round(self.tanks.prop_mass(), 2)} kg", fontsize='12')

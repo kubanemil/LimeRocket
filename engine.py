@@ -97,6 +97,8 @@ class Engine:
         self.molar_mass = results.mw / 1000;
         self.isp = results.isp
         self.thrust = self.exit_vel * self.mdot
+        self.losses = 0.15
+        self.real_thrust = (1-self.losses)*self.thrust
 
     def nozzle_surface_area(self, th_radius, R, a):
         tana = tan(a * pi / 180)  # degree divergence angle
