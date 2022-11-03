@@ -40,18 +40,17 @@ class Flight:
     def plot_tank_height_to_attitude(self, tank_heights=[1, 2, 3],
                                      tank_rads=[i for i in range(1, 15)]):
         mdot = self.rocket.mdot
+        others = self.rocket.others
         rocket_heights = []
         last_rads, masses, prop_masses, max_heights = [], [], [], []
         for h in tank_heights:
             rocs = []
             for r in tank_rads:
-                roc = Rocket(radius=r / 100, mdot=mdot, tanks_height=h)
+                roc = Rocket(radius=r / 100, mdot=mdot, tanks_height=h, others_mass=others)
                 if roc.check():
                     rocs.append(roc)
                 else:
                     break
-            # rocs = [Rocket(radius=r / 100, mdot=mdot, tanks_height=h) for r in tank_rads if
-            #         Rocket(radius=r / 100, mdot=mdot, tanks_height=h).check()]
             flights = [Flight(roc).max_height() for roc in rocs]
             rads = [roc.radius for roc in rocs]
             prop_masses.append(round(rocs[-1].tanks.prop_mass(), 2))
@@ -73,7 +72,7 @@ class Flight:
         print(info_dict)
 
         plt.figtext(0.1, 0.8, f"Mass Flow {mdot}")
-        plt.title("Max heights for Drag-Free Flight of the Rocket.")
+        plt.title("Max heights for Flight with Drag of the Rocket.")
         plt.legend()
         plt.xlabel("Rocket radius, cm")
         plt.ylabel("Max height, meters")
@@ -83,7 +82,7 @@ class Flight:
 
     def __repr__(self):
         return f"The maximum height with drag: {self.max_height()/1000} km.\n" + \
-            f"The maximum height in drag-free environment: {self.max_height()} km."
+            f"The maximum height in drag-free environment: {self.dragfree_max_height()/1000} km."
 
     @staticmethod
     def drag_acc(v, m, k):
@@ -107,10 +106,13 @@ class Flight:
 
 
 if __name__ == "__main__":
-    roc = Rocket(radius=0.06, mdot=0.5, tanks_height=1)
+    roc = Rocket(radius=0.06, mdot=0.5, tanks_height=1, others_mass=20)
     flight = Flight(roc)
-    flight_info = flight.plot_tank_height_to_attitude(tank_heights=[1, 1.5, 2])
-    max_height = flight_info["attitudes"][0]
+    print(flight)
+    flight2 = Flight(Rocket(radius=0.05, mdot=0.5, tanks_height=1.5, others_mass=5))
+    print(flight2)
+    flight_info = flight2.plot_tank_height_to_attitude(tank_heights=[1.2, 1.5, 1.8])
+    # max_height = flight_info["attitudes"][0]
 
 
     # print(mdots)

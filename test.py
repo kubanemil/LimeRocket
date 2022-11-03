@@ -1,7 +1,4 @@
 from math import sqrt, pi
-from math import sin, cos, tan
-from rockets import Rocket
-
 
 pi = round(pi, 3)
 def integral(func, rng):
@@ -11,10 +8,6 @@ def integral(func, rng):
         A += func(x*dx)*dx
     return A
 
-
-
-
-print(flight())
 
 # second_order = lambda i: i**10
 # g = integral(second_order, [0, 10])

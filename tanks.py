@@ -8,15 +8,14 @@ class Tanks:
         self.radius = radius
         self.thick = 10**(-3)  # thickness of the walls.
         self.mdot = mdot  # kg/s
-        self.per = 0.8  # part of tank it will take
-        self.pipes_properties()
+        self.per = 0.9  # part of tank it will take
+        self.pipe_radius = 2 * (10**(-3))
+        self.pipe_length = 1
+        self.gas_height = 0.6
+        self.Po_Pf = (self.total_height + self.gas_height)/(self.gas_height + ((1-self.per)*self.total_height))
 
     # TODO: include pressure to mdot equation.
     # todo: returns pressure inside pressure tank.
-
-    def pipes_properties(self):
-        self.pipe_radius = 2 * (10**(-3))
-        self.pipe_length = 1
 
     def p_diff(self):
         # water: w = 0.0010518 Pas*s
@@ -27,12 +26,12 @@ class Tanks:
         mdot = self.mdot
         return (8 * w * L * mdot) / (3.14 * d * (R ** 4))
 
-    def get_mdot(self):  # mass rate flow
+    def get_mdot(self, p_diff=5.0):  # mass rate flow
         w = 0.00164     # Pa*s
         d = 800  # kg/s
         L = self.pipe_length
         R = self.pipe_radius
-        p_diff = 5 * (10**5)
+        p_diff = p_diff * (10**5)
         return (3.14 * d * (R ** 4) * (p_diff)) / (8 * w * L)
 
     def P(self, h_diff, Po_gas, dens, ho, h_gas):
@@ -82,17 +81,19 @@ class Tanks:
         return 1/ ((1/To)-inx)
 
     def tanks_mass(self):
-        Per = 2*pi*self.radius
+        perimeter = 2*pi*self.radius
         A = R_to_A(self.radius)
-        f_v = (Per*self.fuel_height + 2*A) * self.thick
-        ox_v = (Per*self.lox_height + 2*A) * self.thick
-        return 7900*(f_v+ox_v)
+        f_v = (perimeter*self.fuel_height + 2*A) * self.thick
+        ox_v = (perimeter*self.lox_height + 2*A) * self.thick
+        g_v = (perimeter*self.gas_height + 2*A) * self.thick
+        return 7900*(f_v+ox_v+g_v)
 
     def prop_mass(self):
         return self.fuel_mass() + self.lox_mass()
 
     def total_mass(self):
         return self.tanks_mass() + self.fuel_mass() + self.lox_mass()
+
 
 if __name__ == "__main__":
     tank1 = Tanks()
@@ -101,5 +102,7 @@ if __name__ == "__main__":
 
     print(tank1.P(h_diff=0, Po_gas=500000, h_gas=0.2, ho=0.5, dens=1000))
     print(tank1.P(h_diff=0.5, Po_gas=500000, h_gas=0.2, ho=0.5, dens=1000))
-    print(to_bar(tank1.p_diff()), "bar")
+    print(tank1.get_mdot(p_diff=5))
+    print(tank1.get_mdot(p_diff=5.01), tank1.get_mdot(p_diff=5.05))
+    print(tank1.Po_Pf)
     print(tank1.total_mass())

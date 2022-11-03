@@ -7,11 +7,12 @@
 """
 from engine import Engine
 from tanks import Tanks
+import flight
 from tools import *
 
 
 class Rocket:
-    def __init__(self, tanks_height=2, radius=0.07, others_mass=4, mdot=0.5, o_f=1):
+    def __init__(self, tanks_height=1.5, radius=0.05, others_mass=5, mdot=0.5, o_f=1):
         self.gap_width = 5 * (10**(-3))
         self.engine = Engine(ch_pressure=5, mdot=mdot, ch_radius=radius-self.gap_width, o_f=o_f)
         self.tanks = Tanks(radius=radius-self.gap_width, tanks_height=tanks_height, o_f=o_f, mdot=mdot)
@@ -24,17 +25,18 @@ class Rocket:
         self.others = others_mass  # kg
         self.engineFuel_h = 0.1
         self.fuelLox_h = 0.1
-        self.loxCap_h = 0.1
+        self.gasCap_h = 0.1
+        self.loxGas_h = 0.1
         self.tank_radius = radius*0.95
         self.ch_radius = radius*0.95
-        self.base_h = (self.loxCap_h + self.fuelLox_h + self.tanks.total_height +
+        self.base_h = (self.gasCap_h + self.tanks.gas_height + self.loxGas_h + self.fuelLox_h + self.tanks.total_height +
                        self.engineFuel_h + self.engine.total_length)
         self.fings_h = self.base_h/4
         self.right_h = self.fings_h/2
         self.fings_w = self.radius*3
         self.fings_num = 3
-        self.max_mass = 30  # kg
-        self.lox_tube = self.tanks.lox_height + ((self.loxCap_h+self.fuelLox_h)/2)
+        self.max_mass = 40  # kg
+        self.lox_tube = self.tanks.lox_height + ((self.loxGas_h+self.fuelLox_h)/2)
         self.fuel_tube = self.tanks.fuel_height + ((self.engineFuel_h + self.fuelLox_h) / 2)
         self.engine_tube = self.engine.total_length + (self.engineFuel_h/2)
         self.base_mass = (2*pi*self.radius * self.base_h * self.thick)*self.dens
@@ -73,14 +75,16 @@ class Rocket:
                 "fuel_tank": scaled_list([self.engine.total_length+self.engineFuel_h, 0, self.tanks.fuel_height, 0]),
                 "lox_tank": scaled_list([self.engine.total_length+self.engineFuel_h + self.tanks.fuel_height +
                                          self.fuelLox_h, 0, self.tanks.lox_height, 0]),
+                "gas_tank": scaled_list([self.engine.total_length+self.engineFuel_h + self.tanks.fuel_height +
+                                         self.fuelLox_h + self.tanks.lox_height + self.loxGas_h,
+                                         0, self.tanks.gas_height, 0])
             },
 
             "radius": {
                 "base": [0, self.radius, self.radius, 0],
                 "fings": [0, self.fings_w + self.radius, self.fings_w+self.radius, self.radius],
                 "engine": self.engine.reversed_radiuses,
-                "fuel_tank": [0, self.tank_radius, self.tank_radius, 0],
-                "lox_tank": [0, self.tank_radius, self.tank_radius, 0],
+                "tank": [0, self.tank_radius, self.tank_radius, 0],
             }
         }
 
@@ -97,8 +101,9 @@ class Rocket:
         plot_part(lens['fings'], rads['fings'], fill_color="gray")
         plot_part(lens['base'], rads['base'], fill_color="black")
         plot_part(lens['engine'], rads['engine'], fill_color="red")
-        plot_part(lens['fuel_tank'], rads['fuel_tank'], fill_color="darkblue")
-        plot_part(lens['lox_tank'], rads['lox_tank'], fill_color="darkred")
+        plot_part(lens['fuel_tank'], rads['tank'], fill_color="darkblue")
+        plot_part(lens['lox_tank'], rads['tank'], fill_color="darkred")
+        plot_part(lens['gas_tank'], rads['tank'], fill_color="blue")
         plt.xlabel("Length, cm")
         plt.ylabel("Radius, cm")
         plt.figtext(0.06, 0.89, s=f"Thrust={round(self.engine.real_thrust/9.8, 2)} kg", fontsize='12')
@@ -107,9 +112,13 @@ class Rocket:
         plt.figtext(0.21, 0.85, s=f"Propellant mass={round(self.tanks.prop_mass(), 2)} kg", fontsize='12')
         plt.figtext(0.38, 0.89, s=f"Tanks' height={round(self.tanks_height, 2)} m", fontsize='12')
         plt.figtext(0.38, 0.85, s=f"Burn time={round(self.burn_time(), 2)} sec", fontsize='12')
-        lox_x = l_r['length']['lox_tank'][1]/2
+        plt.figtext(0.55, 0.89, s=f"Po_Pf={round(self.tanks.Po_Pf, 2)}", fontsize='12')
+        plt.figtext(0.55, 0.85, s=f"Max drag height={round(flight.Flight(self).max_height())} m", fontsize='12')
+        gas_x = l_r['length']['gas_tank'][1]/2.4
+        lox_x = l_r['length']['lox_tank'][1]/2.2
         fuel_x = lox_x/1.9
         print(lox_x, fuel_x)
+        plt.figtext(gas_x, 0.49, s=f"Gas", fontsize='10')
         plt.figtext(lox_x, 0.49, s=f"LOX", fontsize='10')
         plt.figtext(fuel_x, 0.49, s=f"Fuel", fontsize='10')
         plt.figtext(0.07, 0.49, s=f"Engine", fontsize='9')
@@ -121,7 +130,7 @@ class Rocket:
 
 
 if __name__ == "__main__":
-    roc = Rocket(radius=0.06, tanks_height=1)
+    roc = Rocket(radius=0.07, tanks_height=1.2, mdot=0.5)
     for k, v in zip(roc.__dict__.keys(), roc.__dict__.values()):
         print(k, v)
     print("Base", roc.base_mass, "Cap", roc.cap_mass, "Fings", roc.fings_mass,
