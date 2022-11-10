@@ -11,9 +11,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-#CEA verified. #Sizing verified.
+# CEA verified. #Sizing verified.
 class Engine:
-    def __init__(self, ch_pressure=5, mdot=0.5, ch_radius=0.06, o_f=1):
+    def __init__(self, ch_pressure, mdot, ch_radius, o_f):
         self.ch_pressure = ch_pressure  # bar
         self.mdot = mdot    # kg/s
         self.o_f = o_f    # oxidizer to fuel ratio
@@ -28,13 +28,12 @@ class Engine:
         self.create_engine_sizes()
 
     def results(self):
-        results = RocketProblem(pressure=self.ch_pressure, materials=[Fuel('RP-1'), Oxidizer('O2(L)', temp=100)], \
+        results = RocketProblem(pressure=self.ch_pressure, materials=[Fuel('RP-1'), Oxidizer('O2(L)', temp=100)],
                                 pressure_units="bar", o_f=self.o_f, pip=self.ch_pressure).run()
         results.set_fac_ma = self.mdot / self.ch_area  # kg/s / m2
         for el in list(results.keys())[:12]:
             del results[el]
         return results
-
 
     def total_mass(self):
         total_surarea = self.ch_surarea + self.th_nozzle_surarea + self.exit_nozzle_surarea
@@ -81,24 +80,24 @@ class Engine:
 
     def create_properties(self):
         results = self.results()
-        self.exit_vel = results.son * results.mach;
-        self.exit_son = results.son;
-        self.exit_mach = results.mach;
-        self.exit_pressure = results.p;
-        self.exit_temp = results.t;
+        self.exit_vel = results.son * results.mach
+        self.exit_son = results.son
+        self.exit_mach = results.mach
+        self.exit_pressure = results.p
+        self.exit_temp = results.t
         self.exit_dens = results.rho
-        self.ch_pressure = results.c_p;
-        self.ch_temp = results.c_t;
+        self.ch_pressure = results.c_p
+        self.ch_temp = results.c_t
         self.ch_dens = results.c_rho
-        self.th_pressure = results.t_p;
-        self.th_temp = results.t_t;
+        self.th_pressure = results.t_p
+        self.th_temp = results.t_t
         self.th_dens = results.t_rho
-        self.gamma = results.gamma;
-        self.molar_mass = results.mw / 1000;
+        self.gamma = results.gamma
+        self.molar_mass = results.mw / 1000
         self.isp = results.isp
-        self.thrust = self.exit_vel * self.mdot
+        self.ideal_thrust = self.exit_vel * self.mdot
         self.losses = 0.15
-        self.real_thrust = (1-self.losses)*self.thrust
+        self.thrust = (1-self.losses)*self.ideal_thrust
 
     def nozzle_surface_area(self, th_radius, R, a):
         tana = tan(a * pi / 180)  # degree divergence angle
@@ -110,7 +109,6 @@ class Engine:
         self.exit_area = self.Ae_At * self.th_area
         self.exit_radius = A_to_R(self.exit_area)
         self.th_radius = A_to_R(self.th_area)
-
 
         self.exit_length = (self.exit_radius - self.th_radius) / (tan(self.a_exit * pi / 180))
         self.th_length = (self.ch_radius - self.th_radius) / (tan(self.a_throat * pi / 180))
@@ -130,20 +128,21 @@ class Engine:
         pip = 1 / self.ch_pressure
         first_ix = ((k + 1) / 2) ** (1 / (k - 1)) * pip ** (1 / k)
         sqrt_ix = (k + 1) / (k - 1) * (1 - pip ** ((k - 1) / k))
-        At_Ae = first_ix * (sqrt_ix) ** 0.5
+        At_Ae = first_ix * (sqrt_ix ** 0.5)
         return 1 / At_Ae
 
     def th_area(self):
-        Pc = self.ch_pressure * 100000;
+        Pc = self.ch_pressure * 100000
         y = self.gamma
-        Tc = self.ch_temp;
-        mdot = self.mdot;
+        Tc = self.ch_temp
+        mdot = self.mdot
         R = 8.314 / self.molar_mass
-        first = mdot / Pc;
-        second = (R * Tc) / y;
-        third = (2 / (y + 1));
+        first = mdot / Pc
+        second = (R * Tc) / y
+        third = (2 / (y + 1))
         fourth = (y + 1) / (y - 1)
         return first * (second / (third ** fourth)) ** 0.5
+
 
 if __name__ == "__main__":
     eng = Engine(ch_pressure=5, mdot=1, ch_radius=0.06)

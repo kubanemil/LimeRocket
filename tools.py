@@ -2,6 +2,9 @@ from math import tan, pi, e, log
 import numpy as np
 import matplotlib.pyplot as plt
 
+def rnd(f):
+    return round(f, 3)
+
 def A_to_R(A):
     return (A/3.14159)**(0.5)
 

@@ -1,9 +1,11 @@
 from tools import *
 
 class Tanks:
-    def __init__(self, radius=0.07, tanks_height=1, o_f=1, mdot=0.5):
+    def __init__(self, radius, tanks_height, o_f, mdot):
         self.o_f = o_f
         self.total_height = tanks_height
+        self.fuel_height = self.total_height/((800*self.o_f/1141)+1)
+        self.lox_height = (800/1141)*self.o_f*self.fuel_height
         self.pres_height = 0.5
         self.radius = radius
         self.thick = 10**(-3)  # thickness of the walls.
@@ -11,8 +13,12 @@ class Tanks:
         self.per = 0.9  # part of tank it will take
         self.pipe_radius = 2 * (10**(-3))
         self.pipe_length = 1
-        self.gas_height = 0.6
-        self.Po_Pf = (self.total_height + self.gas_height)/(self.gas_height + ((1-self.per)*self.total_height))
+        self.Po_Pf = 2
+        self.gas_height = (self.total_height*(1 - self.Po_Pf*(1-self.per)))/(self.Po_Pf-1)
+        self.total_mass = self.tanks_mass() + self.fuel_mass() + self.lox_mass()
+        self.prop_mass = self.fuel_mass() + self.lox_mass()
+
+
 
     # TODO: include pressure to mdot equation.
     # todo: returns pressure inside pressure tank.
@@ -39,14 +45,6 @@ class Tanks:
             print("h_diff can't be greater than ho!")
         else:
             return Po_gas*(h_gas/(h_gas+h_diff)) + dens*10*(ho-h_diff)
-
-    @property
-    def fuel_height(self):
-        return self.total_height/((800*self.o_f/1141)+1)
-
-    @property
-    def lox_height(self):
-        return (800/1141)*self.o_f*self.fuel_height
 
     def lox_mass(self):
         dens = 1141     # kg/m3
@@ -88,21 +86,7 @@ class Tanks:
         g_v = (perimeter*self.gas_height + 2*A) * self.thick
         return 7900*(f_v+ox_v+g_v)
 
-    def prop_mass(self):
-        return self.fuel_mass() + self.lox_mass()
-
-    def total_mass(self):
-        return self.tanks_mass() + self.fuel_mass() + self.lox_mass()
-
 
 if __name__ == "__main__":
-    tank1 = Tanks()
-    p = tank1.lox_boil_pres(T=120)
-    t = tank1.lox_boil_temp(P=10*(10**5))
+    pass
 
-    print(tank1.P(h_diff=0, Po_gas=500000, h_gas=0.2, ho=0.5, dens=1000))
-    print(tank1.P(h_diff=0.5, Po_gas=500000, h_gas=0.2, ho=0.5, dens=1000))
-    print(tank1.get_mdot(p_diff=5))
-    print(tank1.get_mdot(p_diff=5.01), tank1.get_mdot(p_diff=5.05))
-    print(tank1.Po_Pf)
-    print(tank1.total_mass())
