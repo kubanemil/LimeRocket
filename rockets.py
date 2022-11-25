@@ -1,10 +1,3 @@
-"""
-1. Make different classes for: 
-    Tanks - pressure loss in the engine working process, their thickness due to pressure, and their mass
-    Engine - mdot, its mass
-2. Make them the part of the class Rocket, so you can access them by:
-    Rocket.Engine.mdot() or Rocket.Tanks.oxygen.mass()
-"""
 from engine import Engine
 from tanks import Tanks
 from flight import Flight
