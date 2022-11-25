@@ -12,44 +12,46 @@ from tools import *
 
 
 class Rocket(Flight):
-    def __init__(self, tanks_height=1, radius=0.07, others_mass=5, mdot=0.5, o_f=1, ch_pressure=4):
+    def __init__(self, tanks_height=1.2, radius=0.07, others_mass=4, mdot=1, o_f=1, ch_pressure=3.5, Po_Pf=2.5, Cd=0.7):
         self.gap_width = 5 * (10**(-3))
-        self.engine = Engine(ch_pressure=ch_pressure, mdot=mdot, ch_radius=radius-self.gap_width, o_f=o_f)
-        self.tanks = Tanks(radius=radius-self.gap_width, tanks_height=tanks_height, o_f=o_f, mdot=mdot)
-        self.dens = 7900  # kg/m3
-        self.mdot = mdot
+        self.o_f = o_f  # ratio of oxygen to fuel
+        self.engine = Engine(ch_pressure=ch_pressure, mdot=mdot, ch_radius=radius-self.gap_width, o_f=self.o_f)  # engine of the rocket
+        self.tanks = Tanks(radius=radius-self.gap_width, tanks_height=tanks_height, o_f=self.o_f, mdot=mdot, Po_Pf=Po_Pf)  # oxygen, gas, fuel tanks
+        self.dens = 7900  # kg/m3  # density of the construction steel
+        self.mdot = mdot  # mass flow rate of the propellant
         self.burntime = self.tanks.prop_mass / self.mdot  # sec
-        self.Cd = 0.8
-        self.radius = radius
-        self.k = (self.Cd * 1.2 * pi / 2) * (self.radius**2)
-        self.thick = 0.001  # meters
-        self.cap_h = 0.25
-        self.tanks_height = tanks_height
-        self.others = others_mass  # kg
-        self.engineFuel_h = 0.05
-        self.fuelLox_h = 0.05
-        self.gasCap_h = 0.05
-        self.loxGas_h = 0.2
-        self.base_h = (self.gasCap_h + self.tanks.gas_height + self.loxGas_h + self.fuelLox_h + self.tanks.total_height
-                       + self.engineFuel_h + self.engine.total_length)
-        self.fings_h = self.base_h/4
-        self.right_h = self.fings_h/2
-        self.fings_w = self.radius*3
-        self.fings_num = 4
-        self.max_mass = 40  # kg
-        self.lox_tube = self.tanks.lox_height + ((self.loxGas_h+self.fuelLox_h)/2)
-        self.fuel_tube = self.tanks.fuel_height + ((self.engineFuel_h + self.fuelLox_h) / 2)
-        self.engine_tube = self.engine.total_length + (self.engineFuel_h/2)
+        self.Cd = Cd  # drag constant
+        self.radius = radius  # outer radius of the rocket tube
+        self.k = (self.Cd * 1.2 * pi / 2) * (self.radius**2)   # drag coefficient
+        self.thick = 0.001  # meters  # thickness of the wall of the tubes.
+        self.cap_h = 0.25  # height of the rocket cap
+        self.tanks_height = tanks_height # total height of the fuel and oxygen tanks
+        self.others = others_mass  # kg  # mass of the gas equipments and other minor things
+        self.max_mass = 40  # kg maximum allowed mass for rocket
+        self.fuelLox_h = 0.05  # distance between fuel and oxygen tanks
+        self.engineGas_h = 0.05  # distance between engine and gas tank
+        self.loxCap_h = 0.05  # dist. between oxygen tank and cap of the rocket
+        self.gasFuel_h = 0.15  # dist. b. gas tank and fuel tank
+        self.base_h = (self.loxCap_h + self.tanks.gas_height + self.gasFuel_h + self.fuelLox_h + self.tanks.total_height
+                       + self.engineGas_h + self.engine.total_length) # height of the base tube
+        self.lox_tube = self.tanks.lox_height + (self.loxCap_h+self.fuelLox_h)/2  # height of the oxygen tube
+        self.fuel_tube = self.tanks.fuel_height + (self.gasFuel_h + self.fuelLox_h)/2  # height of the fuel tube
+        self.gas_tube = self.tanks.gas_height + (self.engineGas_h + self.gasFuel_h)/2  # height of the gas tube
+        self.engine_tube = self.engine.total_length + (self.engineGas_h/2)  # height of the engine tube
+        self.fings_h = self.base_h/4    # height of the fings
+        self.right_h = self.fings_h/2   # height of the right part
+        self.fings_w = self.radius*3  # width of the fings
+        self.fings_num = 4  # number of fings
         self.base_mass = (2*pi*self.radius * self.base_h * self.thick)*self.dens
         self.fings_mass = (self.fings_num*self.thick*self.fings_w*(self.fings_h+self.right_h)/2)*self.dens
         self.cap_mass = ((pi*self.radius * ((self.cap_h**2 + self.radius**2)**0.5))*self.thick)*self.dens
         self.total_mass = self.base_mass + self.cap_mass + self.fings_mass + self.engine.total_mass() + \
-                          self.tanks.total_mass + self.others
+                            self.tanks.total_mass + self.others
         self.check()
 
     def check(self):
         if self.total_mass > self.max_mass:
-            print(round(self.total_mass, 2), "kg. ", f"Rocket heavier than {self.max_mass} kg!")
+            print(round(self.total_mass, 2), "kg. ", f"Rocket heavier than {self.max_mass} kg")
             return False
         if self.total_mass >= self.engine.thrust/9.8:
             # raise ValueError("Engine can't lift the rocket!")
@@ -58,18 +60,22 @@ class Rocket(Flight):
             return False
         return True
 
-    def l_r(self):
+    def conf(self):
+        """
+        Returns the configurations for plotting the rocket.
+        """
         return {
             "length": {
                 "base": scaled_list([0, 0, self.base_h, self.cap_h]),
                 "fings": [0, 0, self.right_h, self.fings_h],
                 "engine": self.engine.reversed_lengths,
-                "fuel_tank": scaled_list([self.engine.total_length+self.engineFuel_h, 0, self.tanks.fuel_height, 0]),
-                "lox_tank": scaled_list([self.engine.total_length+self.engineFuel_h + self.tanks.fuel_height +
-                                         self.fuelLox_h, 0, self.tanks.lox_height, 0]),
-                "gas_tank": scaled_list([self.engine.total_length+self.engineFuel_h + self.tanks.fuel_height +
-                                         self.fuelLox_h + self.tanks.lox_height + self.loxGas_h,
-                                         0, self.tanks.gas_height, 0])
+                "gas_tank": scaled_list([self.engine.total_length + self.engineGas_h,
+                                         0, self.tanks.gas_height, 0]),
+                "fuel_tank": scaled_list([self.engine.total_length+self.engineGas_h+self.tanks.gas_height+self.gasFuel_h,
+                                          0, self.tanks.fuel_height, 0]),
+                "lox_tank": scaled_list([self.engine.total_length+self.engineGas_h + self.tanks.gas_height+self.gasFuel_h+
+                                         self.tanks.fuel_height + self.fuelLox_h, 0, self.tanks.lox_height, 0]),
+                "tubes": scaled_list([0, 0, self.engine_tube, 0, 0, self.gas_tube, 0, 0, self.fuel_tube, 0, 0, self.lox_tube, 0, 0])
             },
 
             "radius": {
@@ -77,11 +83,16 @@ class Rocket(Flight):
                 "fings": [0, self.fings_w + self.radius, self.fings_w+self.radius, self.radius],
                 "engine": self.engine.reversed_radiuses,
                 "tank": [0, self.tanks.radius, self.tanks.radius, 0],
+                "tubes": [0, self.radius, self.radius, 0, self.radius, self.radius, 0, self.radius,
+                          self.radius, 0, self.radius, self.radius, 0, self.radius]
             }
         }
 
     def plot_rocket(self, ix=999, save=False):
-        l_r = self.l_r()
+        """
+        Plots the rocket.
+        """
+        l_r = self.conf()
         rads = l_r['radius']
         lens = l_r['length']
 
@@ -90,12 +101,13 @@ class Rocket(Flight):
         plt.figure(ix)
         plt.axis([0, 280, -40, 40])
         plt.axis("scaled")
-        plot_part(lens['fings'], rads['fings'], fill_color="gray")
-        plot_part(lens['base'], rads['base'], fill_color="black")
-        plot_part(lens['engine'], rads['engine'], fill_color="red")
-        plot_part(lens['fuel_tank'], rads['tank'], fill_color="darkblue")
-        plot_part(lens['lox_tank'], rads['tank'], fill_color="darkred")
-        plot_part(lens['gas_tank'], rads['tank'], fill_color="blue")
+        plot_part(lens['fings'], rads['fings'], fill_color="white")
+        plot_part(lens['base'], rads['base'], fill_color="white")
+        plot_part(lens['engine'], rads['engine'], fill_color="white")
+        plot_part(lens['fuel_tank'], rads['tank'], fill_color="white")
+        plot_part(lens['lox_tank'], rads['tank'], fill_color="white")
+        plot_part(lens['gas_tank'], rads['tank'], fill_color="white")
+        plot_part(lens['tubes'], rads['tubes'], fill_color="white")
         plt.xlabel("Length, cm")
         plt.ylabel("Radius, cm")
         plt.figtext(0.06, 0.89, s=f"Thrust={round(self.engine.thrust/9.8, 2)} kg", fontsize='12')
@@ -105,10 +117,13 @@ class Rocket(Flight):
         plt.figtext(0.38, 0.89, s=f"Tanks' height={round(self.tanks_height, 2)} m", fontsize='12')
         plt.figtext(0.38, 0.85, s=f"Burn time={round(self.burntime, 2)} sec", fontsize='12')
         plt.figtext(0.55, 0.89, s=f"Po_Pf={round(self.tanks.Po_Pf, 2)}", fontsize='12')
-        plt.figtext(0.7, 0.7, s=self.__repr__(), fontsize='10')
-        gas_x = l_r['length']['gas_tank'][1]/2.4
-        lox_x = l_r['length']['lox_tank'][1]/2.2
-        fuel_x = lox_x/1.9
+        plt.figtext(0.65, 0.65, s=self.__repr__(), fontsize='10')
+        plt.figtext(0.85, 0.7, s=self.inputs(), fontsize='10')
+        dx = 0.2
+        gas_x = (lens["gas_tank"][0] + dx)/2.8
+        lox_x = (lens["lox_tank"][0] + dx)/2.8
+        fuel_x = (lens["fuel_tank"][0] + dx)/2.8
+        print("!!", lox_x, fuel_x)
         plt.figtext(gas_x, 0.49, s=f"Gas", fontsize='10')
         plt.figtext(lox_x, 0.49, s=f"LOX", fontsize='10')
         plt.figtext(fuel_x, 0.49, s=f"Fuel", fontsize='10')
@@ -127,14 +142,26 @@ class Rocket(Flight):
                f"Tank's height: {rnd(self.tanks.total_height)} m" "\n" \
                f"Burn time: {rnd(self.burntime)} secs" "\n" \
                f"Gas pressure {rnd((self.engine.ch_pressure * self.tanks.Po_Pf) + (self.tanks.p_diff()/100000))} Pa" "\n" \
-               f"Max Attitude: {rnd(self.max_height())} m" "\n" \
                f"Mass flow rate: {rnd(self.mdot)} kg/s" "\n" \
-               f"Burn time: {rnd(self.burntime)} secs" "\n" \
-               f"Burn time: {rnd(self.burntime)} secs" "\n" \
+               f"Pressure difference: {rnd(self.tanks.p_diff()/100000)} bar" "\n" \
+               f"LOX boil pressure: {rnd(self.tanks.lox_boil_pres(100)/100000)} bar" "\n" \
+               f"------------------------" "\n"\
+               f"Max Attitude: {rnd(self.max_height())} m" "\n" \
+
+    def inputs(self):
+        return f"INPUTS:" "\n" \
+            f"Chamber pressure: {rnd(self.engine.ch_pressure)} bar" "\n" \
+               f"Radius: {rnd(self.radius)} m" "\n" \
+               f"Mdot: {rnd(self.mdot)} kg/s" "\n" \
+               f"Other's mass: {rnd(self.others)} kg" "\n" \
+               f"Po_Pf: {rnd(self.tanks.Po_Pf)}" "\n" \
+               f"Cd: {rnd(self.Cd)}" "\n" \
+               f"Tanks height: {rnd(self.tanks_height)} m" "\n" \
+               f"O/F ratio: {rnd(self.o_f)}" "\n"
+
 
 if __name__ == "__main__":
-    roc = Rocket(ch_pressure=5)
-    print(roc)
+    roc = Rocket()
     roc.plot_rocket()
     roc.engine.plot_engine()
 

@@ -1,7 +1,7 @@
 from tools import *
 
 class Tanks:
-    def __init__(self, radius, tanks_height, o_f, mdot):
+    def __init__(self, radius, tanks_height, o_f, mdot, Po_Pf):
         self.o_f = o_f
         self.total_height = tanks_height
         self.fuel_height = self.total_height/((800*self.o_f/1141)+1)
@@ -11,9 +11,9 @@ class Tanks:
         self.thick = 10**(-3)  # thickness of the walls.
         self.mdot = mdot  # kg/s
         self.per = 0.9  # part of tank it will take
-        self.pipe_radius = 2 * (10**(-3))
-        self.pipe_length = 1
-        self.Po_Pf = 2
+        self.pipe_radius = 4 * (10**(-3))
+        self.pipe_length = 2
+        self.Po_Pf = Po_Pf
         self.gas_height = (self.total_height*(1 - self.Po_Pf*(1-self.per)))/(self.Po_Pf-1)
         self.total_mass = self.tanks_mass() + self.fuel_mass() + self.lox_mass()
         self.prop_mass = self.fuel_mass() + self.lox_mass()
