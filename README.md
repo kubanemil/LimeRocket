@@ -25,3 +25,15 @@ Also, LimeRocket finds optimal rocket version for maximum height fly:
 For enthusiastic people, who want to build their own advanced and modern rocket, there is yet no tool that can help them with complex calculations. Although there are some tools that provide assistance, like [OpenRocket](https://openrocket.info/) (for solid-propellant, model rockets) and [NASA’s CEARUN](https://cearun.grc.nasa.gov/) (for modeling the engine), their function are narrow and can’t serve as a framework that provides broad opportunities for building LP (liquid-propellant) rockets.
 
 LimeRocket serves exactly that purpose: it can simultaneously model the flight and configuration of the LP rocket. That is why it is perfect for those people, who begin to build their own rockets!
+
+**How to Use it**
+1. Download the code: 
+``` git clone https://github.com/kubanemil/LimeRocket.git ```
+2. Install all of the requirements by: 
+``` pip install -r requirements.txt ```
+3. Get to rockets.py file and create the Rocket() class instance:
+``` roc = Rocket() ```
+4. Then use .plot_rocket() method:
+``` roc.plot_rocket() ```
+5. To see the engine type:
+```roc.plot_engine()```
