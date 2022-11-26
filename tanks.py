@@ -11,40 +11,50 @@ class Tanks:
         self.thick = 10**(-3)  # thickness of the walls.
         self.mdot = mdot  # kg/s
         self.per = 0.9  # part of tank it will take
-        self.pipe_radius = 4 * (10**(-3))
-        self.pipe_length = 2
+        self.pipe_radius = 3 * (10**(-3))
+        self.pipe_length_fuel = 0.9
+        self.pipe_length_lox = 1.6
+        self.inj_radius_fuel = np.pi*0.001
+        self.inj_radius_lox = np.pi*0.001
+        self.inj_area_fuel = np.pi * self.inj_radius_fuel**2
+        self.inj_area_lox = np.pi * self.inj_radius_lox**2
+        self.inj_length = 2 * 10**(-2)
         self.Po_Pf = Po_Pf
         self.gas_height = (self.total_height*(1 - self.Po_Pf*(1-self.per)))/(self.Po_Pf-1)
         self.total_mass = self.tanks_mass() + self.fuel_mass() + self.lox_mass()
         self.prop_mass = self.fuel_mass() + self.lox_mass()
 
-
-
-    # TODO: include pressure to mdot equation.
-    # todo: returns pressure inside pressure tank.
-
-    def p_diff(self):
-        # water: w = 0.0010518 Pas*s
-        w = 0.00164     # Pa*s
+    def fuel_p_diff(self):
+        w = 0.00164  # Pa*s dynamic viscosity of kerosene
         d = 800  # kg/s
-        L = self.pipe_length
-        R = self.pipe_radius
-        mdot = self.mdot
-        return (8 * w * L * mdot) / (3.14 * d * (R ** 4))
+        r = self.pipe_radius
+        R = self.inj_radius_fuel
+        l = self.pipe_length_fuel
+        L = self.inj_length
+        mdot = self.mdot/2
+        pipe_p_diff = (8 * w * l * mdot) / (3.14 * d * r ** 4)
+        injector_p_diff = (8 * w * L * mdot) / (3.14 * d * R ** 4)
+        return pipe_p_diff,  injector_p_diff
 
-    def get_mdot(self, p_diff=5.0):  # mass rate flow
-        w = 0.00164     # Pa*s
-        d = 800  # kg/s
-        L = self.pipe_length
-        R = self.pipe_radius
-        p_diff = p_diff * (10**5)
-        return (3.14 * d * (R ** 4) * (p_diff)) / (8 * w * L)
+    def lox_p_diff(self):
+        w = 7.71 * 10 ** (-6)  # Pa*s dynamic viscosity of lox
+        d = 1141  # kg/s
+        r = self.pipe_radius
+        R = self.inj_radius_lox
+        l = self.pipe_length_lox
+        L = self.inj_length
+        mdot = self.mdot/2
+        pipe_p_diff = (8 * w * l * mdot) / (3.14 * d * r ** 4)
+        injector_p_diff = (8 * w * L * mdot) / (3.14 * d * R ** 4)
+        return pipe_p_diff, injector_p_diff
 
-    def P(self, h_diff, Po_gas, dens, ho, h_gas):
-        if h_diff > ho:
-            print("h_diff can't be greater than ho!")
-        else:
-            return Po_gas*(h_gas/(h_gas+h_diff)) + dens*10*(ho-h_diff)
+    def fuel_inj_v(self):
+        mdot = self.mdot/2
+        return mdot/(800*self.inj_area)
+
+    def lox_inj_v(self):
+        mdot = self.mdot/2
+        return mdot/(1141*self.inj_area)
 
     def lox_mass(self):
         dens = 1141     # kg/m3

@@ -134,9 +134,9 @@ class Rocket(Flight):
                f"Propellant mass: {rnd(self.tanks.prop_mass)} kg" "\n" \
                f"Tank's height: {rnd(self.tanks.total_height)} m" "\n" \
                f"Burn time: {rnd(self.burntime)} secs" "\n" \
-               f"Gas pressure {rnd((self.engine.ch_pressure * self.tanks.Po_Pf) + (self.tanks.p_diff()/100000))} Pa" "\n" \
+               f"Gas pressure {rnd((self.engine.ch_pressure * self.tanks.Po_Pf) + (self.tanks.fuel_p_diff()/100000))} Pa" "\n" \
                f"Mass flow rate: {rnd(self.mdot)} kg/s" "\n" \
-               f"Pressure difference: {rnd(self.tanks.p_diff()/100000)} bar" "\n" \
+               f"Pressure difference: {rnd(self.tanks.fuel_p_diff()/100000)} bar" "\n" \
                f"LOX boil pressure: {rnd(self.tanks.lox_boil_pres(100)/100000)} bar" "\n" \
                f"------------------------" "\n"\
                f"Max Attitude: {rnd(self.max_height())} m" "\n" \
@@ -155,6 +155,11 @@ class Rocket(Flight):
 
 if __name__ == "__main__":
     roc = Rocket()
+    print(roc.tanks.lox_p_diff())
+    print(roc.tanks.fuel_p_diff())
+    print("INJ VEL", roc.tanks.fuel_inj_v())
+    print("LOX INJ VEL", roc.tanks.lox_inj_v())
+    print()
     roc.plot_rocket()
     roc.engine.plot_engine()
 
