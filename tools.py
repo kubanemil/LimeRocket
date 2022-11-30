@@ -2,21 +2,30 @@ from math import tan, pi, e, log
 import numpy as np
 import matplotlib.pyplot as plt
 
+
+def to_mm(m):
+    return m*1000
+
 def rnd(f):
     return round(f, 3)
+
 
 def A_to_R(A):
     return (A/3.14159)**(0.5)
 
+
 def R_to_A(R):
     return 3.14159 * (R**2)
+
 
 def A_to_D(A):
     R = (A/3.14159)**(0.5)
     return 2*R
 
+
 def D_to_A(D):
     return (3.14159 * (D**2))/4
+
 
 def scaled_list(lst):
     new_lst = []
@@ -26,6 +35,7 @@ def scaled_list(lst):
         else:
             new_lst.append(lst[i] + new_lst[i - 1])
     return new_lst
+
 
 def to_bar(Pascal):
     return Pascal/(10**5)

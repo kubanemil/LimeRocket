@@ -11,50 +11,73 @@ class Tanks:
         self.thick = 10**(-3)  # thickness of the walls.
         self.mdot = mdot  # kg/s
         self.per = 0.9  # part of tank it will take
-        self.pipe_radius = 3 * (10**(-3))
-        self.pipe_length_fuel = 0.9
-        self.pipe_length_lox = 1.6
-        self.inj_radius_fuel = np.pi*0.001
-        self.inj_radius_lox = np.pi*0.001
-        self.inj_area_fuel = np.pi * self.inj_radius_fuel**2
-        self.inj_area_lox = np.pi * self.inj_radius_lox**2
-        self.inj_length = 2 * 10**(-2)
+
+        self.pipe_radius = 3 * (10**(-3))  # radius of supply pipe of Fuel and LOX
+        self.pipe_length_fuel = 0.9   # length of supply pip of Fuel
+        self.pipe_length_lox = 1.6  # length of supply pip of LOX
+
+        self.injector_a = 50  # degree angle of injection
+        self.v_lox = 20   # m/s velocity of LOX from injector
+        self.v_fuel = self.v_lox * np.tan(self.injector_a * np.pi/180) # m/s velocity of FUEL from injector
+
+        self.inj_radius = 2 * 10**(-2)
+        self.inj_gap = 1 * 10**(-3)
+        self.gap_area = np.pi * self.inj_gap * (2*self.inj_radius - self.inj_gap)
+
+        self.inj_area_fuel = self.area_inj(vel=self.v_fuel, dens=800)
+        self.inj_area_lox = self.area_inj(vel=self.v_lox, dens=1141)
+        self.inj_length_lox = 3 * 10**(-2)
+        self.inj_length_fuel = 3 * 10**(-3)
+        self.orifice_rad_fuel = self.orifice_radius(self.inj_area_fuel)
+        self.orifice_rad_lox = self.orifice_radius(self.inj_area_lox)
+
+        self.p_diff_pipe_fuel = self.p_diff("F", self.pipe_radius, self.pipe_length_fuel)
+        self.p_diff_inj_fuel = self.p_diff("F", A_to_R(self.inj_area_fuel), self.inj_length_fuel)
+        self.p_diff_pipe_lox = self.p_diff("L", self.pipe_radius, self.pipe_length_lox)
+        self.p_diff_gap_lox = self.p_diff("L", A_to_R(self.gap_area), self.inj_length_lox)
+        self.p_diff_inj_lox = self.p_diff("L", A_to_R(self.inj_area_lox), self.inj_length_fuel)
+        self.p_diff_fuel = self.p_diff_pipe_fuel + self.p_diff_inj_fuel
+        self.p_diff_lox = self.p_diff_pipe_lox + self.p_diff_gap_lox + self.p_diff_inj_lox
+
         self.Po_Pf = Po_Pf
         self.gas_height = (self.total_height*(1 - self.Po_Pf*(1-self.per)))/(self.Po_Pf-1)
         self.total_mass = self.tanks_mass() + self.fuel_mass() + self.lox_mass()
         self.prop_mass = self.fuel_mass() + self.lox_mass()
 
-    def fuel_p_diff(self):
-        w = 0.00164  # Pa*s dynamic viscosity of kerosene
-        d = 800  # kg/s
-        r = self.pipe_radius
-        R = self.inj_radius_fuel
-        l = self.pipe_length_fuel
-        L = self.inj_length
-        mdot = self.mdot/2
-        pipe_p_diff = (8 * w * l * mdot) / (3.14 * d * r ** 4)
-        injector_p_diff = (8 * w * L * mdot) / (3.14 * d * R ** 4)
-        return pipe_p_diff,  injector_p_diff
 
-    def lox_p_diff(self):
-        w = 7.71 * 10 ** (-6)  # Pa*s dynamic viscosity of lox
-        d = 1141  # kg/s
-        r = self.pipe_radius
-        R = self.inj_radius_lox
-        l = self.pipe_length_lox
-        L = self.inj_length
-        mdot = self.mdot/2
-        pipe_p_diff = (8 * w * l * mdot) / (3.14 * d * r ** 4)
-        injector_p_diff = (8 * w * L * mdot) / (3.14 * d * R ** 4)
-        return pipe_p_diff, injector_p_diff
+    def p_diff(self, L_F_W, r, l, mdot=0.5):
+        if L_F_W == "L":
+            w = 7.71 * 10 ** (-6)  # Pa*s dynamic viscosity of lox
+            d = 1141  # kg/s
+        if L_F_W == "F":
+            w = 0.00164  # Pa*s dynamic viscosity of kerosene
+            d = 800  # kg/s
+        if L_F_W == "W":
+            w = 0.001  # Pa*s dynamic viscosity of water
+            d = 1000  # kg/s
+        return (8 * w * l * mdot) / (3.14 * d * r ** 4)
 
-    def fuel_inj_v(self):
-        mdot = self.mdot/2
-        return mdot/(800*self.inj_area)
+    def area_from_p_diff(self, L_F_W, p_diff):
+        if L_F_W == "L":
+            w = 7.71 * 10 ** (-6)  # Pa*s dynamic viscosity of lox
+            d = 1141  # kg/s
+        if L_F_W == "F":
+            w = 0.00164  # Pa*s dynamic viscosity of kerosene
+            d = 800  # kg/s
+        if L_F_W == "W":
+            w = 0.001  # Pa*s dynamic viscosity of water
+            d = 1000  # kg/s
 
-    def lox_inj_v(self):
-        mdot = self.mdot/2
-        return mdot/(1141*self.inj_area)
+    @staticmethod
+    def area_inj(vel, dens, mdot=0.5):
+        return mdot/(dens*vel)
+
+    @staticmethod
+    def orifice_radius(area, N=16):
+        return (area/(N*np.pi)) ** 0.5
+
+    def inj_gap(self):
+        pass
 
     def lox_mass(self):
         dens = 1141     # kg/m3

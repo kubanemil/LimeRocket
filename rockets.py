@@ -8,7 +8,7 @@ class Rocket(Flight):
     def __init__(self, tanks_height=1.2, radius=0.07, others_mass=4, mdot=1, o_f=1, ch_pressure=3.5, Po_Pf=2.5, Cd=0.7):
         self.gap_width = 5 * (10**(-3))
         self.o_f = o_f  # ratio of oxygen to fuel
-        self.engine = Engine(ch_pressure=ch_pressure, mdot=mdot, ch_radius=radius-self.gap_width, o_f=self.o_f)  # engine of the rocket
+        self.engine = Engine(ch_pressure=ch_pressure, mdot=mdot, radius=radius-self.gap_width, o_f=self.o_f)     # engine of the rocket
         self.tanks = Tanks(radius=radius-self.gap_width, tanks_height=tanks_height, o_f=self.o_f, mdot=mdot, Po_Pf=Po_Pf)  # oxygen, gas, fuel tanks
         self.dens = 7900  # kg/m3  # density of the construction steel
         self.mdot = mdot  # mass flow rate of the propellant
@@ -116,7 +116,6 @@ class Rocket(Flight):
         gas_x = (lens["gas_tank"][0] + dx)/2.8
         lox_x = (lens["lox_tank"][0] + dx)/2.8
         fuel_x = (lens["fuel_tank"][0] + dx)/2.8
-        print("!!", lox_x, fuel_x)
         plt.figtext(gas_x, 0.49, s=f"Gas", fontsize='10')
         plt.figtext(lox_x, 0.49, s=f"LOX", fontsize='10')
         plt.figtext(fuel_x, 0.49, s=f"Fuel", fontsize='10')
@@ -154,12 +153,12 @@ class Rocket(Flight):
 
 
 if __name__ == "__main__":
-    roc = Rocket()
+    roc = Rocket(Cd=0.8, others_mass=5)
     print(roc.tanks.lox_p_diff())
     print(roc.tanks.fuel_p_diff())
-    print("INJ VEL", roc.tanks.fuel_inj_v())
-    print("LOX INJ VEL", roc.tanks.lox_inj_v())
-    print()
+    # print("INJ VEL", roc.tanks.fuel_inj_v())
+    # print("LOX INJ VEL", roc.tanks.lox_inj_v())
+    # print()
     roc.plot_rocket()
     roc.engine.plot_engine()
 

@@ -11,17 +11,17 @@ import numpy as np
 
 # CEA verified. #Sizing verified.
 class Engine:
-    def __init__(self, ch_pressure, mdot, ch_radius, o_f, ch_length=0.15, a_exit=5, a_throat=22):
+    def __init__(self, ch_pressure, mdot, radius, o_f, ch_length=0.15, a_exit=5, a_throat=22):
         self.ch_pressure = ch_pressure  # bar pressure in the engine's chamber
         self.mdot = mdot    # kg/s  propellant's mass flow
         self.o_f = o_f    # oxidizer to fuel ratio
-        self.ch_radius = ch_radius  # m   outer radius of the chamber
+        self.thickness = 5 * (10 ** (-3))  # meters
+        self.ch_radius = radius - self.thickness  # m   outer radius of the chamber
         self.ch_area = R_to_A(self.ch_radius)   # m2
         self.ch_length = ch_length  # length of the chamber
-        self.thickness = 4 * (10 ** (-3))  # meters
         self.a_exit = a_exit   # degree
         self.a_throat = a_throat    # degree
-        self.a_injector = 45
+        self.a_injector = 50
         self.insul_thick = 0.5  # cm
         self.create_properties()
         self.create_engine_sizes()
@@ -153,3 +153,4 @@ class Engine:
         third = 2/(y + 1)
         fourth = (y + 1) / (y - 1)
         return first * (second / (third ** fourth)) ** 0.5
+
