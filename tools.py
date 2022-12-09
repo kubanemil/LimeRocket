@@ -3,6 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
+def K_to_C(K):
+    return K - 273
+
 def to_mm(m):
     return m*1000
 

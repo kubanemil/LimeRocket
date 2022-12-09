@@ -16,6 +16,7 @@ class Engine:
         self.mdot = mdot    # kg/s  propellant's mass flow
         self.o_f = o_f    # oxidizer to fuel ratio
         self.thickness = 5 * (10 ** (-3))  # meters
+        self.outer_radius = radius
         self.ch_radius = radius - self.thickness  # m   outer radius of the chamber
         self.ch_area = R_to_A(self.ch_radius)   # m2
         self.ch_length = ch_length  # length of the chamber

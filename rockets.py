@@ -5,8 +5,8 @@ from tools import *
 
 
 class Rocket(Flight):
-    def __init__(self, tanks_height=1.2, radius=0.07, others_mass=4, mdot=1, o_f=1, ch_pressure=3.5, Po_Pf=2.5, Cd=0.7):
-        self.gap_width = 5 * (10**(-3))
+    def __init__(self, tanks_height=1, radius=0.07, others_mass=4, mdot=1, o_f=0.7, ch_pressure=3.5, Po_Pf=2.5, Cd=0.7):
+        self.gap_width = 10 * (10**(-3))
         self.o_f = o_f  # ratio of oxygen to fuel
         self.engine = Engine(ch_pressure=ch_pressure, mdot=mdot, radius=radius-self.gap_width, o_f=self.o_f)     # engine of the rocket
         self.tanks = Tanks(radius=radius-self.gap_width, tanks_height=tanks_height, o_f=self.o_f, mdot=mdot, Po_Pf=Po_Pf)  # oxygen, gas, fuel tanks
@@ -17,10 +17,10 @@ class Rocket(Flight):
         self.radius = radius  # outer radius of the rocket tube
         self.k = (self.Cd * 1.2 * pi / 2) * (self.radius**2)   # drag coefficient
         self.thick = 0.001  # meters  # thickness of the wall of the tubes.
-        self.cap_h = 0.25  # height of the rocket cap
-        self.tanks_height = tanks_height # total height of the fuel and oxygen tanks
+        self.cap_h = 0.2  # height of the rocket cap
+        self.tanks_height = tanks_height  # total height of the fuel and oxygen tanks
         self.others = others_mass  # kg  # mass of the gas equipments and other minor things
-        self.max_mass = 40  # kg maximum allowed mass for rocket
+        self.max_mass = 50  # kg maximum allowed mass for rocket
         self.fuelLox_h = 0.05  # distance between fuel and oxygen tanks
         self.engineGas_h = 0.05  # distance between engine and gas tank
         self.loxCap_h = 0.05  # dist. between oxygen tank and cap of the rocket
@@ -126,6 +126,9 @@ class Rocket(Flight):
         else:
             plt.show()
 
+    def steel_mass(self):
+        return self.tanks.tanks_mass() + self.engine.total_mass() + self.cap_mass + self.base_mass + self.fings_mass + 1
+
     def __repr__(self):
         return f"Rocket thrust: {rnd(self.engine.thrust)} Newtons" "\n" \
                f"ISP: {rnd(self.engine.isp)} secs" "\n" \
@@ -133,9 +136,9 @@ class Rocket(Flight):
                f"Propellant mass: {rnd(self.tanks.prop_mass)} kg" "\n" \
                f"Tank's height: {rnd(self.tanks.total_height)} m" "\n" \
                f"Burn time: {rnd(self.burntime)} secs" "\n" \
-               f"Gas pressure {rnd((self.engine.ch_pressure * self.tanks.Po_Pf) + (self.tanks.fuel_p_diff()/100000))} Pa" "\n" \
+               f"Gas pressure {rnd((self.engine.ch_pressure * self.tanks.Po_Pf) + (self.tanks.p_diff_fuel/100000))} bar" "\n" \
                f"Mass flow rate: {rnd(self.mdot)} kg/s" "\n" \
-               f"Pressure difference: {rnd(self.tanks.fuel_p_diff()/100000)} bar" "\n" \
+               f"Pressure difference: {rnd(self.tanks.p_diff_fuel/100000)} bar" "\n" \
                f"LOX boil pressure: {rnd(self.tanks.lox_boil_pres(100)/100000)} bar" "\n" \
                f"------------------------" "\n"\
                f"Max Attitude: {rnd(self.max_height())} m" "\n" \
@@ -153,9 +156,8 @@ class Rocket(Flight):
 
 
 if __name__ == "__main__":
-    roc = Rocket(Cd=0.8, others_mass=5)
-    print(roc.tanks.lox_p_diff())
-    print(roc.tanks.fuel_p_diff())
+    roc = Rocket(Cd=0.6, others_mass=2, tanks_height=1, Po_Pf=2.5, radius=0.06)
+
     # print("INJ VEL", roc.tanks.fuel_inj_v())
     # print("LOX INJ VEL", roc.tanks.lox_inj_v())
     # print()
