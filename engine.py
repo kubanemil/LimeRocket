@@ -4,18 +4,18 @@ estimating the sizing of the engine.
 """
 
 from tools import *
-from CEA_Wrap import Fuel, Oxidizer, RocketProblem
+from CEA_Wrap import Fuel, Oxidizer, RocketProblem, Material
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 # CEA verified. #Sizing verified.
 class Engine:
-    def __init__(self, ch_pressure, mdot, radius, o_f, ch_length=0.15, a_exit=5, a_throat=22):
+    def __init__(self, ch_pressure, mdot, radius, o_f, ho2_per=37, ch_length=0.15, a_exit=5, a_throat=30):
         self.ch_pressure = ch_pressure  # bar pressure in the engine's chamber
         self.mdot = mdot    # kg/s  propellant's mass flow
         self.o_f = o_f    # oxidizer to fuel ratio
-        self.thickness = 5 * (10 ** (-3))  # meters
+        self.ho2_per = ho2_per
+        self.thickness = 3 * (10 ** (-3))  # meters
         self.outer_radius = radius
         self.ch_radius = radius - self.thickness  # m   outer radius of the chamber
         self.ch_area = R_to_A(self.ch_radius)   # m2
@@ -28,7 +28,9 @@ class Engine:
         self.create_engine_sizes()
 
     def results(self):
-        results = RocketProblem(pressure=self.ch_pressure, materials=[Fuel('RP-1'), Oxidizer('O2(L)', temp=100)],
+        results = RocketProblem(pressure=self.ch_pressure, materials=[Fuel('RP-1', wt_percent=100),
+                                                                      Oxidizer('H2O2(L)', wt_percent=self.ho2_per),
+                                                                      Oxidizer('H2O', wt_percent=(100-self.ho2_per), temp=300)],
                                 pressure_units="bar", o_f=self.o_f, pip=self.ch_pressure).run()
         results.set_fac_ma = self.mdot / self.ch_area  # kg/s / m2
         for el in list(results.keys())[:12]:
