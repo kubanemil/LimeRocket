@@ -10,7 +10,6 @@
 !*.txt
 !*/
 !test.py
-!test2.py
 !pressure_loss_02_tank.py
 !drag_force.py
 !.idea

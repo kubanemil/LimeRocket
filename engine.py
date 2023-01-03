@@ -23,7 +23,7 @@ class Engine:
         self.a_exit = a_exit   # degree
         self.a_throat = a_throat    # degree
         self.a_injector = 50
-        self.insul_thick = 0.5  # cm
+        self.insul_thick = 0.3  # cm
         self.create_properties()
         self.create_engine_sizes()
 
@@ -58,6 +58,7 @@ class Engine:
         plt.plot(lengths_cm, -radiuses_cm-self.insul_thick, "black")
         plt.plot(lengths_cm, radiuses_cm, "red")
         plt.plot(lengths_cm, -radiuses_cm, "red")
+        plt.grid(True)
         # plt.plot(self.injector_line(), [0, self.ch_radius*100-self.insul_thick], 'black')
         # plt.plot(self.injector_line(), [0, -self.ch_radius*100+self.insul_thick], 'black')
         plt.figtext(0.13, 0.93, s=f"Thrust={round(self.thrust/9.8, 2)} kg", fontsize='12')
