@@ -5,7 +5,7 @@ from tools import *
 
 
 class Rocket(Flight):
-    def __init__(self, tanks_height=1, radius=0.07, ho2_per=37, others_mass=4, mdot=1, o_f=2, ch_pressure=3.5, Po_Pf=2.5, Cd=0.7):
+    def __init__(self, tanks_height=1, radius=0.07, ho2_per=38, others_mass=4, mdot=1, o_f=2, ch_pressure=3.5, Po_Pf=2.5, Cd=0.7):
         self.gap_width = 5 * (10**(-3))
         # ratio of oxidizer to fuel, mass flow rate of the propellant, total height of ox+fuel tanks.
         self.o_f, self.mdot, self.radius, self.Cd, self.tanks_height, self.others = o_f, mdot, radius, Cd, tanks_height, others_mass
@@ -100,6 +100,7 @@ class Rocket(Flight):
         plot_part(lens['ox_tank'], rads['tank'], fill_color="white")
         plot_part(lens['gas_tank'], rads['tank'], fill_color="white")
         plot_part(lens['tubes'], rads['tubes'], fill_color="white")
+        plt.grid(True)
         plt.xlabel("Length, cm")
         plt.ylabel("Radius, cm")
         plt.figtext(0.06, 0.89, s=f"Thrust={round(self.engine.thrust/9.8, 2)} kg", fontsize='12')
@@ -161,5 +162,5 @@ if __name__ == "__main__":
     # # print("OX INJ VEL", roc.tanks.ox_inj_v())
     # # print()
     # roc.plot_rocket()
-    roc.engine.plot_engine()
+    print(roc.tanks.p_diff_fuel, roc.tanks.p_diff_ox)
 
