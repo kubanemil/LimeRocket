@@ -10,7 +10,7 @@ import numpy as np
 
 # CEA verified. #Sizing verified.
 class Engine:
-    def __init__(self, ch_pressure, mdot, radius, o_f, ho2_per=37, ch_length=0.15, a_exit=5, a_throat=30):
+    def __init__(self, ch_pressure, mdot, radius, o_f, KPD, ho2_per, ch_length=0.15, a_exit=5, a_throat=30):
         self.ch_pressure = ch_pressure  # bar pressure in the engine's chamber
         self.mdot = mdot    # kg/s  propellant's mass flow
         self.o_f = o_f    # oxidizer to fuel ratio
@@ -18,12 +18,13 @@ class Engine:
         self.thickness = 3 * (10 ** (-3))  # meters
         self.outer_radius = radius
         self.ch_radius = radius - self.thickness  # m   outer radius of the chamber
-        self.ch_area = R_to_A(self.ch_radius)   # m2
+        self.ch_area = R2A(self.ch_radius)   # m2
         self.ch_length = ch_length  # length of the chamber
         self.a_exit = a_exit   # degree
         self.a_throat = a_throat    # degree
         self.a_injector = 50
         self.insul_thick = 0.3  # cm
+        self.KPD = KPD
         self.create_properties()
         self.create_engine_sizes()
 
@@ -111,8 +112,7 @@ class Engine:
         self.molar_mass = results.mw / 1000
         self.isp = results.isp
         self.ideal_thrust = self.exit_vel * self.mdot
-        self.losses = 0.15
-        self.thrust = (1-self.losses)*self.ideal_thrust
+        self.thrust = self.KPD*self.ideal_thrust
 
     def nozzle_surface_area(self, th_radius, R, a):
         tana = tan(a * pi / 180)  # degree divergence angle
@@ -122,8 +122,8 @@ class Engine:
         self.Ae_At = self.Ae_At()
         self.th_area = self.th_area()
         self.exit_area = self.Ae_At * self.th_area
-        self.exit_radius = A_to_R(self.exit_area)
-        self.th_radius = A_to_R(self.th_area)
+        self.exit_radius = A2R(self.exit_area)
+        self.th_radius = A2R(self.th_area)
 
         self.exit_length = (self.exit_radius - self.th_radius) / (tan(self.a_exit * pi / 180))
         self.th_length = (self.ch_radius - self.th_radius) / (tan(self.a_throat * pi / 180))

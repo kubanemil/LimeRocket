@@ -3,7 +3,26 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def K_to_C(K):
+def octagon_A2R(A):
+    return np.sqrt(A/np.sqrt(8))
+
+
+def octagon_R2A(R):  # radius
+    return np.sqrt(8)*R**2
+
+def octagon_R2s(R):
+    return R*np.sqrt(2 - np.sqrt(2))
+def octagon_s2R(s):
+    return s/np.sqrt(2 - np.sqrt(2))
+def octagon_A2s(A):
+    R = octagon_A2R(A)
+    return octagon_R2s(R)
+
+def octagon_s2A(A):
+    R = octagon_A2R(A)
+    return octagon_R2s(R)
+
+def K2C(K):  # Kelvin to Celsius
     return K - 273
 
 def to_mm(m):
@@ -13,20 +32,20 @@ def rnd(f):
     return round(f, 3)
 
 
-def A_to_R(A):
+def A2R(A):
     return (A/3.14159)**(0.5)
 
 
-def R_to_A(R):
+def R2A(R):
     return 3.14159 * (R**2)
 
 
-def A_to_D(A):
+def A2D(A):
     R = (A/3.14159)**(0.5)
     return 2*R
 
 
-def D_to_A(D):
+def D2A(D):
     return (3.14159 * (D**2))/4
 
 
@@ -51,3 +70,4 @@ def plot_part(length_list, radius_list, fill_color="white", line_color="black"):
     plt.plot(lengths_cm, -radiuses_cm, line_color, linewidth=0.5)
     plt.fill_between(lengths_cm, radiuses_cm, color=fill_color)
     plt.fill_between(lengths_cm, -radiuses_cm, color=fill_color)
+

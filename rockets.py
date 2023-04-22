@@ -5,19 +5,19 @@ from tools import *
 
 
 class Rocket(Flight):
-    def __init__(self, tanks_height=1, radius=0.07, ho2_per=38, others_mass=4, mdot=1, o_f=2, ch_pressure=3.5, Po_Pf=2.5, Cd=0.7):
+    def __init__(self, tanks_height=1, radius=0.07, ho2_per=38, others_mass=4, KPD=0.85, mdot=1, o_f=2, ch_pressure=3.5, Po_Pf=2.5, Cd=0.7):
         self.gap_width = 5 * (10**(-3))
         # ratio of oxidizer to fuel, mass flow rate of the propellant, total height of ox+fuel tanks.
         self.o_f, self.mdot, self.radius, self.Cd, self.tanks_height, self.others = o_f, mdot, radius, Cd, tanks_height, others_mass
         self.ho2_dens = 1_450_000/((ho2_per*-4.50)+1450)
         self.ho2_per = ho2_per  # perentage of h2o2 in oxidizer
-        self.engine = Engine(ch_pressure=ch_pressure, mdot=mdot, radius=radius-self.gap_width, o_f=self.o_f, ho2_per=ho2_per)     # engine of the rocket
+        self.engine = Engine(ch_pressure=ch_pressure, mdot=mdot, KPD=KPD, radius=radius-self.gap_width, o_f=self.o_f, ho2_per=ho2_per)     # engine of the rocket
         self.tanks = Tanks(radius=radius-self.gap_width, tanks_height=tanks_height, o_f=self.o_f,
                            mdot=mdot, Po_Pf=Po_Pf, ox_dens=self.ho2_dens)  # oxidizer, gas, fuel tanks
         self.dens = 7900  # kg/m3  # density of the construction steel
         self.burntime = self.tanks.prop_mass / self.mdot  # sec
         self.k = (self.Cd * 1.2 * pi / 2) * (self.radius**2)   # drag coefficient
-        self.thick = 0.001  # meters  # thickness of the wall of the tubes.
+        self.thick = 0.0015  # meters  # thickness of the wall of the tubes.
         self.cap_h = 0.2  # height of the rocket cap
         self.max_mass = 50  # kg maximum allowed mass for rocket
         self.fuelOx_h = 0.05  # distance between fuel and oxidizer tanks
