@@ -46,7 +46,6 @@ class Tanks:
         self.total_mass = self.tanks_mass() + self.fuel_mass() + self.ox_mass()
         self.prop_mass = self.fuel_mass() + self.ox_mass()
 
-
     def p_diff(self, L_F_W, r, l):
         if L_F_W == "L":
             w = 0.00125  # Pa*s dynamic viscosity of hydrogen peroxide

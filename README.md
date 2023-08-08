@@ -1,6 +1,6 @@
 # LimeRocket. Making Optimal Liquid-Propellant Rockets
 
-**How Application Works**
+## How Application Works
 
 [LimeRocket](https://github.com/kubanemil/rocket) is a Python **framework** that uses modern **rocket science** theory to model the liquid propellant rocket. This includes:
 
@@ -20,7 +20,7 @@ Also, LimeRocket finds optimal rocket version for maximum height fly:
 
 ![](media/2a081690ce6e8268981b8c6ea93ed4f5.png)
 
-**Why?**
+## Why?
 
 For enthusiastic people, who want to build their own advanced and modern rocket, there is yet no tool that can help them with complex calculations. Although there are some tools that provide assistance, like [OpenRocket](https://openrocket.info/) (for solid-propellant, model rockets) and [NASA’s CEARUN](https://cearun.grc.nasa.gov/) (for modeling the engine), their function are narrow and can’t serve as a framework that provides broad opportunities for building LP (liquid-propellant) rockets.
 
@@ -37,3 +37,27 @@ LimeRocket serves exactly that purpose: it can simultaneously model the flight a
 ``` roc.plot_rocket() ```
 5. To see the engine type:
 ```roc.plot_engine()```
+
+## Variable Explanation
+
+### Rocket() class
+ - <b>tanks_height</b> - combined height of oxidizer tank and fuel tank (in meters)
+ - <b>o_f</b> - mass ratio of oxidizer to fuel (ox_mass/fuel_mass)
+ - <b>radius</b> = outer radios of rocket's base (in meters)
+ - <b>ho2_per</b> = concentration of HO2 in percents (0% - 100%)
+ - <b>others_mass</b> - mass of the scheme and other minor details.
+ - <b>KPD</b> - relative efficiency of engine in ratio (0-1.0)
+ - <b>mdot</b> - the combined mass flow of fuel+oxidizer (kg/sec)
+ - <b>ch_pressure</b> - pressure inside the engine's chamber.
+ - <b>Po_Pf</b> - ratio of initial pressure inside the tanks to the final.
+ - <b>Cd</b> - drag coefficient of the Rocket.
+
+### Tank() class
+ - <b>radius</b> - 
+ - <b></b> - 
+ - <b></b> - 
+ - <b></b> - 
+ - <b></b> - 
+ - <b></b> - 
+ - <b>OOO</b> - 
+ - 
