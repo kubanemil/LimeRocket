@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from rockets import Rocket
 
+
 class FlightCalc:
     def plot_tank_height_to_attitude(self, tank_heights=[1, 2, 3],
                                      tank_rads=[i for i in range(1, 15)]):
