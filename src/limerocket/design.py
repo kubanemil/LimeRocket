@@ -428,7 +428,10 @@ def _design_once(spec: DesignSpec, mixture_ratio: float, ideal: Performance) -> 
     ]
     if bottle:
         masses.append(MassItem(bottle.name, bottle.mass_kg, "structure"))
-    masses += [MassItem(name, kg, "other") for name, kg in veh.other_masses_kg]
+    masses += [
+        MassItem(name.replace("_", " ").capitalize(), kg, "other")
+        for name, kg in veh.other_masses_kg
+    ]
     masses += [
         MassItem(f"Pressurant ({spec.feed.pressurant.name.lower()})", pressurant, "pressurant"),
         MassItem(f"Oxidizer ({eng.oxidizer.name})", ox_load.loaded_mass_kg, "propellant"),

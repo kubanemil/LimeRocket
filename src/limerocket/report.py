@@ -64,7 +64,11 @@ def input_rows(design: Design) -> list[Row]:
     e, f, st, v = s.engine, s.feed, s.structure, s.vehicle
     rows: list[Row] = [
         ("Target thrust at design ambient", fmt(e.thrust_n), "N"),
-        ("Burn time (spec)", fmt(e.burn_time_s), "s"),
+        (
+            "Burn time",
+            fmt(e.burn_time_s),
+            "s, set by the apogee search" if design.apogee_search else "s",
+        ),
         ("Chamber pressure", _bar(e.chamber_pressure_pa), "bar"),
         ("Design ambient pressure", _bar(e.design_ambient_pressure_pa), "bar"),
         ("Oxidizer", e.oxidizer.name, ""),
@@ -97,6 +101,7 @@ def input_rows(design: Design) -> list[Row]:
     ]
     if f.mode is FeedMode.REGULATED:
         rows += [
+            ("Bottle material", st.bottle_material.name, ""),
             ("Bottle pressure", _bar(f.bottle_pressure_pa), "bar"),
             ("Regulator dropout margin", _bar(f.regulator_dropout_margin_pa), "bar"),
             ("Pressurant margin", fmt(100 * f.pressurant_margin), "%"),
@@ -118,7 +123,6 @@ def input_rows(design: Design) -> list[Row]:
     rows += [
         ("Maximum diameter", _mm(st.max_diameter_m), "mm"),
         ("Tank material", st.tank_material.name, ""),
-        ("Bottle material", st.bottle_material.name, ""),
         (
             "Safety factor on yield / ultimate",
             f"{fmt(st.yield_factor)} / {fmt(st.ultimate_factor)}",

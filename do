@@ -27,7 +27,6 @@ case "${1:-help}" in
       name="$(basename "$spec" .yaml)"
       uv run limerocket design "$spec" -o "examples/out/$name"
     done
-    uv run python docs/make_figures.py
     ;;
   help|*)
     cat <<'USAGE'
@@ -37,7 +36,7 @@ usage: ./do <task>
   check         ruff lint, ruff format check, mypy
   fmt           apply ruff fixes and formatting
   run [args]    run the limerocket CLI, e.g. ./do run design examples/lime-1.yaml -o out
-  examples      regenerate example reports and README figures
+  examples      regenerate the example reports and exports in examples/out
 USAGE
     ;;
 esac

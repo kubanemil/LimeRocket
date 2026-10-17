@@ -89,8 +89,8 @@ def _engine_axes(ax: Axes, design: Design, *, annotate: bool) -> None:
     if annotate:
         ax.annotate(
             f"Dt {2 * ch.throat_radius_m * 1e3:.1f} mm",
-            (0.0, -ch.throat_radius_m * 1e3),
-            xytext=(0, -18),
+            (0.0, 0.0),
+            xytext=(0, 4),
             textcoords="offset points",
             ha="center",
             fontsize=8,
@@ -145,10 +145,14 @@ def burn_figure(design: Design) -> Figure:
 
         ax = axes[0, 1]
         ax.plot(t, burn.chamber_pressure_pa / PA_PER_BAR, color=SERIES[0], label="Chamber")
+        same = np.allclose(burn.oxidizer_tank_pressure_pa, burn.fuel_tank_pressure_pa, rtol=1e-3)
         ax.plot(
-            t, burn.oxidizer_tank_pressure_pa / PA_PER_BAR, color=SERIES[1], label="Oxidizer tank"
+            t,
+            burn.oxidizer_tank_pressure_pa / PA_PER_BAR,
+            color=SERIES[1],
+            label="Tanks" if same else "Oxidizer tank",
         )
-        if not np.allclose(burn.oxidizer_tank_pressure_pa, burn.fuel_tank_pressure_pa):
+        if not same:
             ax.plot(t, burn.fuel_tank_pressure_pa / PA_PER_BAR, color=SERIES[2], label="Fuel tank")
         ax.set_title("Pressure [bar]")
         ax.legend(loc="lower left")
