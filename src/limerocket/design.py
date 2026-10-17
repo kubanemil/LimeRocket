@@ -494,13 +494,17 @@ def _search_apogee(
     spec: DesignSpec, mixture_ratio: float, ideal: Performance, target: float
 ) -> tuple[Design, ApogeeSearch]:
     """Bracket the burn time that reaches `target`, then refine with Brent's method."""
-    cache: dict[float, float] = {}
+    designs: dict[float, Design] = {}
+
+    def trial(burn_time: float) -> Design:
+        if burn_time not in designs:
+            designs[burn_time] = _design_once(
+                _with_burn_time(spec, burn_time), mixture_ratio, ideal
+            )
+        return designs[burn_time]
 
     def apogee(burn_time: float) -> float:
-        if burn_time not in cache:
-            trial = _design_once(_with_burn_time(spec, burn_time), mixture_ratio, ideal)
-            cache[burn_time] = trial.flight.apogee_m
-        return cache[burn_time]
+        return trial(burn_time).flight.apogee_m
 
     t0 = spec.engine.burn_time_s
     lo_limit, hi_limit = BURN_TIME_BOUNDS[0] * t0, BURN_TIME_BOUNDS[1] * t0
@@ -518,9 +522,9 @@ def _search_apogee(
         lo, hi = sorted((a, b))
         burn_time = float(brentq(lambda t: apogee(t) - target, lo, hi, xtol=1e-3 * t0))
     else:
-        burn_time = max(cache, key=lambda t: cache[t]) if step > 1.0 else min(cache)
-    final = _design_once(_with_burn_time(spec, burn_time), mixture_ratio, ideal)
-    return final, ApogeeSearch(target, reached, burn_time, len(cache) + 1)
+        burn_time = max(designs, key=apogee) if step > 1.0 else min(designs)
+    final = trial(burn_time)
+    return final, ApogeeSearch(target, reached, burn_time, len(designs))
 
 
 def design(spec: DesignSpec) -> Design:
