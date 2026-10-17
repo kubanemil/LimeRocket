@@ -81,6 +81,7 @@ class Design:
     mixture_ratio: float
     ideal: Performance
     chamber: ThrustChamber
+    engine: Engine
     mass_flow_kg_s: float
     c_star_m_s: float
     cf_vacuum: float
@@ -454,6 +455,7 @@ def _design_once(spec: DesignSpec, mixture_ratio: float, ideal: Performance) -> 
         mixture_ratio=mixture_ratio,
         ideal=ideal,
         chamber=chamber,
+        engine=engine,
         mass_flow_kg_s=mass_flow,
         c_star_m_s=c_star,
         cf_vacuum=cf_vacuum,
