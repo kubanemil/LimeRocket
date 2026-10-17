@@ -362,7 +362,7 @@ def _feed(s: _Section) -> FeedSpec:
             bottle_volume_m3=None if volume_l is None else volume_l * M3_PER_L,
             regulator_dropout_margin_pa=s.number("regulator_dropout_margin_bar", 10.0, ge=0)
             * PA_PER_BAR,
-            pressurant_margin=s.number("pressurant_margin", 0.10, ge=0),
+            pressurant_margin=s.number("pressurant_margin", 0.20, ge=0),
         )
     s.finish()
     return spec

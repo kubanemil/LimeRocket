@@ -68,7 +68,7 @@ Regulated mode only:
 | `bottle_pressure_bar` | `300` | Initial bottle pressure |
 | `bottle_volume_l` | `auto` | Bottle volume; `auto` sizes it from an energy balance |
 | `regulator_dropout_margin_bar` | `10` | Bottle must stay this far above the set pressure |
-| `pressurant_margin` | `0.10` | Extra bottle volume over the exact requirement |
+| `pressurant_margin` | `0.20` | Extra bottle volume over the exact ideal-gas requirement |
 | `ullage_fraction` | `0.05` | Initial gas volume in each propellant tank |
 
 Blowdown mode only:

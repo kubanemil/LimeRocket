@@ -1,5 +1,5 @@
 ; Peroxide-B: 90% high-test peroxide / RP-1 kerosene
-; LimeRocket 2026-10-17, sea-level thrust, liquid pressure-fed
+; LimeRocket 0.1.0, sea-level thrust, liquid pressure-fed
 Peroxide-B 160 1020 P 5.6089 8.1122 LimeRocket
    0.0100 2000.00
    0.1574 1952.00

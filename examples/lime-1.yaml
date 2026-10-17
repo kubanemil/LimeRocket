@@ -27,7 +27,7 @@ feed:
   pressurant_temperature_k: 293.15
   bottle_pressure_bar: 300
   regulator_dropout_margin_bar: 10
-  pressurant_margin: 0.10
+  pressurant_margin: 0.20
   ullage_fraction: 0.05
   residual_fraction: 0.03
   lines:
