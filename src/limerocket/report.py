@@ -12,7 +12,17 @@ from limerocket.design import Design
 from limerocket.feed import FeedMode
 from limerocket.plots import burn_figure, engine_figure, flight_figure, to_svg, vehicle_figure
 from limerocket.tanks import Vessel
-from limerocket.units import G0_M_S2, PA_PER_BAR
+from limerocket.units import (
+    G0_M_S2,
+    KG_PER_G,
+    M3_PER_CM3,
+    M3_PER_L,
+    M_PER_UM,
+    PA_PER_KPA,
+    PA_PER_MPA,
+    m_to_mm,
+    pa_to_bar,
+)
 
 Row = tuple[str, str, str]
 
@@ -28,11 +38,11 @@ def fmt(value: float, digits: int = 4) -> str:
 
 
 def _bar(pa: float) -> str:
-    return fmt(pa / PA_PER_BAR)
+    return fmt(pa_to_bar(pa))
 
 
 def _mm(m: float) -> str:
-    return fmt(m * 1e3)
+    return fmt(m_to_mm(m))
 
 
 def _table(rows: list[Row], head: tuple[str, ...] = ("Quantity", "Value", "Unit")) -> str:
@@ -113,8 +123,8 @@ def input_rows(design: Design) -> list[Row]:
             (
                 label,
                 (
-                    f"{fmt(line.length_m)} m x {fmt(line.inner_diameter_m * 1e3)} mm ID, "
-                    f"k = {fmt(line.minor_loss_k)}, roughness {fmt(line.roughness_m * 1e6)} um"
+                    f"{fmt(line.length_m)} m x {_mm(line.inner_diameter_m)} mm ID, "
+                    f"k = {fmt(line.minor_loss_k)}, roughness {fmt(line.roughness_m / M_PER_UM)} um"
                 ),
                 "",
             )
@@ -147,7 +157,7 @@ def performance_rows(design: Design) -> list[Row]:
             "optimised" if design.spec.engine.mixture_ratio is None else "given",
         ),
         ("Chamber temperature", fmt(p.chamber.temperature_k), "K"),
-        ("Chamber molar mass", fmt(p.chamber.molar_mass_kg_mol * 1e3), "kg/kmol"),
+        ("Chamber molar mass", fmt(p.chamber.molar_mass_kg_mol / KG_PER_G), "kg/kmol"),
         ("Chamber isentropic exponent", fmt(p.chamber.gamma), ""),
         (
             "Throat temperature / pressure",
@@ -194,7 +204,7 @@ def chamber_rows(design: Design) -> list[Row]:
             fmt(c.contraction_ratio),
             "auto" if design.spec.engine.contraction_ratio is None else "given",
         ),
-        ("Chamber volume (L* x At)", fmt(c.chamber_volume_m3 * 1e6), "cm3"),
+        ("Chamber volume (L* x At)", fmt(c.chamber_volume_m3 / M3_PER_CM3), "cm3"),
         ("Cylinder length", _mm(c.cylinder_length_m), "mm"),
         ("Convergent length", _mm(c.convergent_length_m), "mm"),
         ("Bell length (80 % of 15 deg cone)", _mm(c.nozzle.length_m), "mm"),
@@ -228,7 +238,7 @@ def feed_rows(design: Design) -> list[list[str]]:
                 fmt(branch.line.friction_factor(flow, branch.fluid), 3),
                 _bar(line_dp),
                 f"{_bar(side.pressure_drop_pa)} ({fmt(100 * side.pressure_drop_pa / pc, 3)} %)",
-                f"{side.orifices.count} x {fmt(side.orifices.diameter_m * 1e3, 3)} mm",
+                f"{side.orifices.count} x {fmt(m_to_mm(side.orifices.diameter_m), 3)} mm",
                 fmt(side.orifices.discharge_coefficient, 2),
                 fmt(side.velocity_m_s, 3),
             ]
@@ -247,11 +257,11 @@ def pressurisation_rows(design: Design) -> list[Row]:
             "bar",
         ),
         ("Injector momentum ratio (ox/fuel)", fmt(design.injector.momentum_ratio, 3), ""),
-        ("Pressurant mass", fmt(design.pressurant_mass_kg * 1e3), "g"),
+        ("Pressurant mass", fmt(design.pressurant_mass_kg / KG_PER_G), "g"),
     ]
     if p.mode is FeedMode.REGULATED:
         rows += [
-            ("Bottle volume", fmt(p.bottle_volume_m3 * 1e3), "L"),
+            ("Bottle volume", fmt(p.bottle_volume_m3 / M3_PER_L), "L"),
             ("Bottle pressure", _bar(p.bottle_pressure_pa), "bar"),
             ("Regulator dropout below", _bar(p.regulator_dropout_pa), "bar"),
         ]
@@ -262,15 +272,15 @@ def vessel_rows(vessels: list[Vessel]) -> list[list[str]]:
     return [
         [
             v.name,
-            fmt(v.volume_m3 * 1e3),
+            fmt(v.volume_m3 / M3_PER_L),
             "sphere" if v.is_sphere else "cylinder",
             _mm(2 * v.inner_radius_m),
             _mm(v.length_m),
             "-" if v.is_sphere else _mm(v.cylinder_wall_m),
             _mm(v.head_wall_m),
             _bar(v.pressure_pa),
-            fmt(max(v.hoop_stress_pa, v.head_stress_pa) / 1e6, 3),
-            fmt(v.allowable_stress_pa / 1e6, 3),
+            fmt(max(v.hoop_stress_pa, v.head_stress_pa) / PA_PER_MPA, 3),
+            fmt(v.allowable_stress_pa / PA_PER_MPA, 3),
             fmt(v.margin_of_safety, 2),
             fmt(v.mass_kg),
         ]
@@ -336,7 +346,11 @@ def flight_rows(design: Design) -> list[Row]:
             "m/s / m",
         ),
         ("Maximum Mach number", fmt(f.max_mach, 3), ""),
-        ("Maximum dynamic pressure", fmt(f.max_q_pa / 1e3), f"kPa at {fmt(f.max_q_time_s, 3)} s"),
+        (
+            "Maximum dynamic pressure",
+            fmt(f.max_q_pa / PA_PER_KPA),
+            f"kPa at {fmt(f.max_q_time_s, 3)} s",
+        ),
         ("Maximum acceleration", fmt(f.max_acceleration_m_s2 / G0_M_S2, 3), "g"),
         ("Lift-off thrust-to-weight", fmt(f.liftoff_thrust_to_weight, 3), ""),
         ("Rail exit velocity", fmt(f.rail_exit_velocity_m_s, 3), "m/s"),
@@ -560,7 +574,7 @@ def terminal_summary(design: Design) -> str:
         ),
         (
             f"  Apogee {fmt(f.apogee_m)} m   max Mach {fmt(f.max_mach, 3)}   "
-            f"max q {fmt(f.max_q_pa / 1e3)} kPa   "
+            f"max q {fmt(f.max_q_pa / PA_PER_KPA)} kPa   "
             f"max accel {fmt(f.max_acceleration_m_s2 / G0_M_S2, 3)} g"
         ),
     ]

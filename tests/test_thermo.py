@@ -5,10 +5,16 @@ import pytest
 from limerocket import thermo
 from limerocket.propellants import CATALOG, Ingredient, Propellant, Role
 from limerocket.thermo import Freeze, Reactants
-from limerocket.units import G0_M_S2, M_PER_FT, psi_to_pa
+from limerocket.units import G0_M_S2
 from tests.conftest import LIQUID_HYDROGEN, LIQUID_OXYGEN
 
 LOX_LH2 = Reactants.of(LIQUID_OXYGEN, LIQUID_HYDROGEN)
+PA_PER_PSI = 6894.757293168
+M_PER_FT = 0.3048
+
+
+def psi_to_pa(value_psi: float) -> float:
+    return value_psi * PA_PER_PSI
 
 
 # NASA RP-1311 Part II example 8, CEA2 reference output (nasa/cea test/main_interface).

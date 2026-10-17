@@ -16,7 +16,7 @@ from matplotlib.typing import RcKeyType
 
 from limerocket.design import Design
 from limerocket.export import outer_wall
-from limerocket.units import G0_M_S2, PA_PER_BAR
+from limerocket.units import G0_M_S2, PA_PER_KPA, m_to_mm, pa_to_bar
 
 SURFACE = "#fcfcfb"
 INK = "#0b0b0b"
@@ -73,9 +73,9 @@ def to_svg(fig: Figure) -> str:
 
 def _engine_axes(ax: Axes, design: Design, *, annotate: bool) -> None:
     ch = design.chamber
-    x, r = ch.x_m * 1e3, ch.r_m * 1e3
+    x, r = m_to_mm(ch.x_m), m_to_mm(ch.r_m)
     xo, ro = outer_wall(ch)
-    xo, ro = xo * 1e3, ro * 1e3
+    xo, ro = m_to_mm(xo), m_to_mm(ro)
     for sign in (1, -1):
         ax.fill(
             np.concatenate([x, xo[::-1]]),
@@ -90,7 +90,7 @@ def _engine_axes(ax: Axes, design: Design, *, annotate: bool) -> None:
     ax.set_ylabel("Radius [mm]")
     if annotate:
         ax.annotate(
-            f"Dt {2 * ch.throat_radius_m * 1e3:.1f} mm",
+            f"Dt {m_to_mm(2 * ch.throat_radius_m):.1f} mm",
             (0.0, 0.0),
             xytext=(0, 4),
             textcoords="offset points",
@@ -99,16 +99,16 @@ def _engine_axes(ax: Axes, design: Design, *, annotate: bool) -> None:
             color=INK_2,
         )
         ax.annotate(
-            f"Dc {2 * ch.chamber_radius_m * 1e3:.1f} mm",
-            (x[0], ch.chamber_radius_m * 1e3),
+            f"Dc {m_to_mm(2 * ch.chamber_radius_m):.1f} mm",
+            (x[0], m_to_mm(ch.chamber_radius_m)),
             xytext=(4, 6),
             textcoords="offset points",
             fontsize=8,
             color=INK_2,
         )
         ax.annotate(
-            f"De {2 * ch.exit_radius_m * 1e3:.1f} mm",
-            (x[-1], ch.exit_radius_m * 1e3),
+            f"De {m_to_mm(2 * ch.exit_radius_m):.1f} mm",
+            (x[-1], m_to_mm(ch.exit_radius_m)),
             xytext=(-4, 6),
             textcoords="offset points",
             ha="right",
@@ -146,16 +146,16 @@ def burn_figure(design: Design) -> Figure:
         ax.set_ylim(bottom=0)
 
         ax = axes[0, 1]
-        ax.plot(t, burn.chamber_pressure_pa / PA_PER_BAR, color=SERIES[0], label="Chamber")
+        ax.plot(t, pa_to_bar(burn.chamber_pressure_pa), color=SERIES[0], label="Chamber")
         same = np.allclose(burn.oxidizer_tank_pressure_pa, burn.fuel_tank_pressure_pa, rtol=1e-3)
         ax.plot(
             t,
-            burn.oxidizer_tank_pressure_pa / PA_PER_BAR,
+            pa_to_bar(burn.oxidizer_tank_pressure_pa),
             color=SERIES[1],
             label="Tanks" if same else "Oxidizer tank",
         )
         if not same:
-            ax.plot(t, burn.fuel_tank_pressure_pa / PA_PER_BAR, color=SERIES[2], label="Fuel tank")
+            ax.plot(t, pa_to_bar(burn.fuel_tank_pressure_pa), color=SERIES[2], label="Fuel tank")
         ax.set_title("Pressure [bar]")
         ax.legend(loc="lower left")
         ax.set_ylim(bottom=0)
@@ -173,9 +173,9 @@ def burn_figure(design: Design) -> Figure:
             ax.plot(t, burn.isp_s(pa), color=SERIES[0])
             ax.set_title("Specific impulse, design ambient [s]")
         else:
-            ax.plot(t, burn.bottle_pressure_pa / PA_PER_BAR, color=SERIES[0])
+            ax.plot(t, pa_to_bar(burn.bottle_pressure_pa), color=SERIES[0])
             ax.axhline(
-                design.pressurisation.regulator_dropout_pa / PA_PER_BAR, color=MUTED, linewidth=0.8
+                pa_to_bar(design.pressurisation.regulator_dropout_pa), color=MUTED, linewidth=0.8
             )
             ax.set_title("Pressurant bottle [bar]")
             ax.set_ylim(bottom=0)
@@ -193,7 +193,7 @@ def flight_figure(design: Design) -> Figure:
             (axes[0, 0], fl.altitude_m, "Altitude above pad [m]"),
             (axes[0, 1], fl.velocity_m_s, "Velocity [m/s]"),
             (axes[1, 0], fl.acceleration_m_s2 / G0_M_S2, "Acceleration [g]"),
-            (axes[1, 1], fl.dynamic_pressure_pa / 1e3, "Dynamic pressure [kPa]"),
+            (axes[1, 1], fl.dynamic_pressure_pa / PA_PER_KPA, "Dynamic pressure [kPa]"),
         )
         for ax, values, title in panels:
             ax.plot(t, values, color=SERIES[0])
@@ -220,8 +220,8 @@ def flight_figure(design: Design) -> Figure:
         )
         ax = axes[1, 1]
         ax.annotate(
-            f"max q {fl.max_q_pa / 1e3:.1f} kPa",
-            (fl.max_q_time_s, fl.max_q_pa / 1e3),
+            f"max q {fl.max_q_pa / PA_PER_KPA:.1f} kPa",
+            (fl.max_q_time_s, fl.max_q_pa / PA_PER_KPA),
             xytext=(6, -4),
             textcoords="offset points",
             fontsize=8,
@@ -283,7 +283,7 @@ def overview_figure(design: Design) -> Figure:
 
 def vehicle_figure(design: Design) -> Figure:
     """Side view of the stack, nose left, to scale."""
-    radius = design.spec.structure.max_diameter_m * 500.0
+    radius = m_to_mm(design.spec.structure.max_diameter_m) / 2
     blocks: list[tuple[str, str, float]] = []
     if design.spec.vehicle.other_length_m > 0:
         blocks.append(("nose", "Nose, recovery, avionics", design.spec.vehicle.other_length_m))
@@ -300,7 +300,7 @@ def vehicle_figure(design: Design) -> Figure:
         ax.grid(False)
         x = 0.0
         for kind, label, length in blocks:
-            w = length * 1e3
+            w = m_to_mm(length)
             ax.add_patch(
                 Rectangle(
                     (x, -radius),
@@ -322,7 +322,7 @@ def vehicle_figure(design: Design) -> Figure:
             )
             x += w
         ch = design.chamber
-        ex, er = (ch.x_m - ch.x_m[0]) * 1e3 + x, ch.r_m * 1e3
+        ex, er = m_to_mm(ch.x_m - ch.x_m[0]) + x, m_to_mm(ch.r_m)
         ax.fill_between(ex, -er, er, color=WALL, linewidth=0)
         ax.plot(ex, er, ex, -er, color=SERIES[0], linewidth=1.2)
         ax.set_xlim(-20, ex[-1] + 20)
@@ -333,7 +333,7 @@ def vehicle_figure(design: Design) -> Figure:
         ax.set_xlabel("Length [mm]")
         ax.set_title(
             f"Vehicle stack: {design.vehicle_length_m:.2f} m long, "
-            f"{design.spec.structure.max_diameter_m * 1e3:.0f} mm diameter, "
+            f"{m_to_mm(design.spec.structure.max_diameter_m):.0f} mm diameter, "
             f"{design.liftoff_mass_kg:.1f} kg at lift-off"
         )
         return fig

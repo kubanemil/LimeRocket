@@ -9,7 +9,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-G0 = 9.80665
+from limerocket.units import G0_M_S2, P_STANDARD_PA
+
 R_STAR = 8.31432e3  # J/(kmol K), the value the 1976 standard uses
 M0 = 28.9644  # kg/kmol, sea-level mean molecular weight
 EARTH_RADIUS_M = 6_356_766.0
@@ -18,22 +19,21 @@ SUTHERLAND_BETA = 1.458e-6
 SUTHERLAND_S_K = 110.4
 
 T0_K = 288.15
-P0_PA = 101_325.0
 
 LAYER_BASES_M = (0.0, 11_000.0, 20_000.0, 32_000.0, 47_000.0, 51_000.0, 71_000.0, 84_852.0)
 LAPSE_RATES_K_M = (-0.0065, 0.0, 0.001, 0.0028, 0.0, -0.0028, -0.002, 0.0)
 
 
 def _layer_bases() -> tuple[tuple[float, ...], tuple[float, ...]]:
-    temps, pressures = [T0_K], [P0_PA]
+    temps, pressures = [T0_K], [P_STANDARD_PA]
     for i in range(len(LAYER_BASES_M) - 1):
         dh = LAYER_BASES_M[i + 1] - LAYER_BASES_M[i]
         t, p, lapse = temps[-1], pressures[-1], LAPSE_RATES_K_M[i]
         t_next = t + lapse * dh
         if lapse == 0.0:
-            p_next = p * math.exp(-G0 * M0 * dh / (R_STAR * t))
+            p_next = p * math.exp(-G0_M_S2 * M0 * dh / (R_STAR * t))
         else:
-            p_next = p * (t / t_next) ** (G0 * M0 / (R_STAR * lapse))
+            p_next = p * (t / t_next) ** (G0_M_S2 * M0 / (R_STAR * lapse))
         temps.append(t_next)
         pressures.append(p_next)
     return tuple(temps), tuple(pressures)
@@ -68,9 +68,9 @@ def temperature_pressure(geometric_m: float) -> tuple[float, float]:
     )
     t = tb + lapse * (h - hb)
     if lapse == 0.0:
-        p = pb * math.exp(-G0 * M0 * (h - hb) / (R_STAR * tb))
+        p = pb * math.exp(-G0_M_S2 * M0 * (h - hb) / (R_STAR * tb))
     else:
-        p = pb * (tb / t) ** (G0 * M0 / (R_STAR * lapse))
+        p = pb * (tb / t) ** (G0_M_S2 * M0 / (R_STAR * lapse))
     return t, p
 
 
@@ -86,4 +86,4 @@ def state(geometric_m: float) -> AirState:
 
 
 def gravity_m_s2(geometric_m: float) -> float:
-    return G0 * (EARTH_RADIUS_M / (EARTH_RADIUS_M + geometric_m)) ** 2
+    return G0_M_S2 * (EARTH_RADIUS_M / (EARTH_RADIUS_M + geometric_m)) ** 2

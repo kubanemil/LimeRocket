@@ -26,7 +26,7 @@ from limerocket.spec import DesignSpec
 from limerocket.tanks import Vessel, size_vessel
 from limerocket.thermo import Performance
 from limerocket.trajectory import Flight, Vehicle, fly
-from limerocket.units import G0_M_S2, PA_PER_BAR, mm_to_m
+from limerocket.units import G0_M_S2, m_to_mm, mm_to_m, pa_to_bar
 
 INTERNAL_FIT_FRACTION = 0.9  # tanks and bottle sit inside the airframe with 10 % radial clearance
 SUMMERFIELD_SEPARATION_RATIO = 0.4  # pe/pa below which nozzle flow separates (Sutton ch. 3)
@@ -230,8 +230,8 @@ def _pressurisation(
     dropout = tank_pressure + feed.regulator_dropout_margin_pa
     if feed.bottle_pressure_pa <= dropout:
         raise DesignError(
-            f"bottle pressure {feed.bottle_pressure_pa / PA_PER_BAR:.0f} bar must exceed the "
-            f"regulator dropout pressure {dropout / PA_PER_BAR:.1f} bar"
+            f"bottle pressure {pa_to_bar(feed.bottle_pressure_pa):.0f} bar must exceed the "
+            f"regulator dropout pressure {pa_to_bar(dropout):.1f} bar"
         )
     expelled = sum(t.usable_mass_kg / t.branch.fluid.density_kg_m3 for t in (oxidizer, fuel))
     volume = feed.bottle_volume_m3 or (1.0 + feed.pressurant_margin) * bottle_volume_m3(
@@ -315,7 +315,7 @@ def _warnings(design: Design) -> list[str]:
     for label, side in (("oxidizer", design.injector.oxidizer), ("fuel", design.injector.fuel)):
         if side.orifices.diameter_m < MIN_ORIFICE_DIAMETER_M:
             out.append(
-                f"{label} orifices are {side.orifices.diameter_m * 1e3:.2f} mm; fewer, larger "
+                f"{label} orifices are {m_to_mm(side.orifices.diameter_m):.2f} mm; fewer, larger "
                 "orifices are easier to drill"
             )
     if flight.liftoff_thrust_to_weight < MIN_LIFTOFF_THRUST_TO_WEIGHT:
@@ -387,8 +387,8 @@ def _design_once(spec: DesignSpec, mixture_ratio: float, ideal: Performance) -> 
     )
     if chamber.outer_diameter_m > st.max_diameter_m:
         raise DesignError(
-            f"thrust chamber is {chamber.outer_diameter_m * 1e3:.0f} mm across but the airframe "
-            f"allows {st.max_diameter_m * 1e3:.0f} mm; lower the contraction ratio or raise Pc"
+            f"thrust chamber is {m_to_mm(chamber.outer_diameter_m):.0f} mm across but the airframe "
+            f"allows {m_to_mm(st.max_diameter_m):.0f} mm; lower the contraction ratio or raise Pc"
         )
 
     oxidizer_flow = mass_flow * mixture_ratio / (1.0 + mixture_ratio)

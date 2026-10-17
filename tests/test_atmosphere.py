@@ -1,6 +1,7 @@
 import pytest
 
 from limerocket import atmosphere
+from limerocket.units import G0_M_S2
 
 # U.S. Standard Atmosphere 1976 (NOAA-S/T 76-1562), Table I, geometric altitude.
 USSA_1976 = [
@@ -31,4 +32,4 @@ def test_sea_level_speed_of_sound_and_viscosity_match_the_standard():
 
 def test_gravity_falls_with_inverse_square_of_radius():
     r0 = atmosphere.EARTH_RADIUS_M
-    assert atmosphere.gravity_m_s2(r0) == pytest.approx(atmosphere.G0 / 4)
+    assert atmosphere.gravity_m_s2(r0) == pytest.approx(G0_M_S2 / 4)
