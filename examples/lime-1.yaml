@@ -1,0 +1,53 @@
+# Hobby-scale regulated pressure-fed engine: 75 % ethanol and liquid oxygen, ~1 kN.
+name: Lime-1
+description: 1 kN regulated ethanol/LOX sounding rocket in a 152 mm airframe
+
+engine:
+  thrust_n: 1000
+  burn_time_s: 6
+  chamber_pressure_bar: 22
+  design_ambient_pressure_bar: 1.01325
+  oxidizer: lox
+  fuel: ethanol75
+  mixture_ratio: optimize
+  l_star_m: 1.2
+  contraction_ratio: auto
+  convergence_half_angle_deg: 30
+  c_star_efficiency: 0.92
+  thrust_coefficient_efficiency: 0.98
+  wall_material: ss316
+  injector:
+    pressure_drop_fraction: 0.20
+    oxidizer: {discharge_coefficient: 0.65, orifices: 12}
+    fuel: {discharge_coefficient: 0.65, orifices: 12}
+
+feed:
+  mode: regulated
+  pressurant: helium
+  pressurant_temperature_k: 293.15
+  bottle_pressure_bar: 300
+  regulator_dropout_margin_bar: 10
+  pressurant_margin: 0.20
+  ullage_fraction: 0.05
+  residual_fraction: 0.03
+  lines:
+    oxidizer: {length_m: 0.6, inner_diameter_mm: 7.7, roughness_um: 1.5, minor_loss_k: 6}
+    fuel: {length_m: 1.4, inner_diameter_mm: 7.7, roughness_um: 1.5, minor_loss_k: 6}
+
+structure:
+  max_diameter_mm: 152
+  tank_material: al6061-t6
+  bottle_material: ti6al4v
+  yield_safety_factor: 1.5
+  ultimate_safety_factor: 2.0
+  min_wall_mm: 1.5
+
+vehicle:
+  other_masses_kg:
+    airframe_and_fins: 3.5
+    nose_and_recovery: 1.8
+    avionics: 0.5
+    valves_and_plumbing: 2.2
+  other_length_m: 1.3
+  rail_length_m: 6
+  launch_altitude_m: 0

@@ -1,0 +1,50 @@
+# Blowdown pressure-fed engine on 90 % high-test peroxide and RP-1, sized to reach 5 km.
+# CEA treats the pair as equilibrium combustion; a catalyst-bed engine would inject
+# decomposed peroxide as hot gas, which the liquid orifice model here does not cover.
+name: Peroxide-B
+description: 2 kN blowdown HTP-90/RP-1 rocket with a 5 km apogee target
+
+engine:
+  thrust_n: 2000
+  burn_time_s: 8
+  chamber_pressure_bar: 25
+  oxidizer: htp90
+  fuel: rp1
+  mixture_ratio: 7.0
+  l_star_m: 1.5
+  convergence_half_angle_deg: 35
+  c_star_efficiency: 0.93
+  thrust_coefficient_efficiency: 0.98
+  wall_material: ss316
+  injector:
+    pressure_drop_fraction: 0.25
+    oxidizer: {discharge_coefficient: 0.75, orifices: 24}
+    fuel: {discharge_coefficient: 0.75, orifices: 12}
+
+feed:
+  mode: blowdown
+  pressurant: nitrogen
+  blowdown_ratio: 2.2
+  polytropic_exponent: 1.2
+  residual_fraction: 0.03
+  lines:
+    oxidizer: {length_m: 0.5, inner_diameter_mm: 10.2, roughness_um: 1.5, minor_loss_k: 5}
+    fuel: {length_m: 1.8, inner_diameter_mm: 7.7, roughness_um: 1.5, minor_loss_k: 5}
+
+structure:
+  max_diameter_mm: 160
+  tank_material: al6061-t6
+  yield_safety_factor: 1.5
+  ultimate_safety_factor: 2.0
+  min_wall_mm: 1.5
+
+vehicle:
+  other_masses_kg:
+    airframe_and_fins: 5.0
+    nose_and_recovery: 2.5
+    avionics: 0.6
+    valves_and_plumbing: 2.5
+  other_length_m: 1.6
+  rail_length_m: 8
+  launch_altitude_m: 1400
+  apogee_target_m: 5000

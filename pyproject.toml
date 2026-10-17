@@ -1,0 +1,82 @@
+[project]
+name = "limerocket"
+version = "0.1.0"
+description = "Design a small pressure-fed liquid rocket from one YAML spec: equilibrium chemistry, nozzle contour, feed system, tanks and trajectory."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Emil Kuban" }]
+requires-python = ">=3.12,<3.15"
+keywords = ["rocket", "propulsion", "cea", "nozzle", "liquid-propellant"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "cea>=3.3.4",
+    "matplotlib>=3.9",
+    "numpy>=2.0",
+    "pyyaml>=6.0",
+    "scipy>=1.14",
+]
+
+[project.urls]
+Repository = "https://github.com/kubanemil/LimeRocket"
+
+[project.scripts]
+limerocket = "limerocket.cli:main"
+
+[dependency-groups]
+dev = [
+    "ezdxf>=1.4.5",
+    "mypy>=1.13",
+    "pytest>=8.3",
+    "ruff>=0.8",
+    "scipy-stubs>=1.14",
+    "types-pyyaml>=6.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.8,<0.14"]
+build-backend = "uv_build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F", "I", "B", "UP", "N", "SIM", "C4", "PTH", "RUF", "PL", "PIE", "RET",
+    "PERF", "NPY", "ANN", "S", "A", "ISC", "T20", "ERA",
+]
+ignore = [
+    "PLR0913",  # physics functions legitimately take many named inputs
+    "PLR2004",  # comparisons against physical thresholds read better inline
+    "PLR0915",
+    "S101",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN", "PLR", "S"]
+"src/limerocket/cli.py" = ["T20"]
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.mypy]
+strict = true
+packages = ["limerocket"]
+mypy_path = "src"
+
+[[tool.mypy.overrides]]
+# cea 3.3.4 ships a .pyi with a syntax error (non-default parameter after a default one)
+module = ["cea", "cea.*"]
+follow_imports = "skip"
+follow_imports_for_stubs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
