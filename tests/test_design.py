@@ -11,7 +11,9 @@ from tests.conftest import EXAMPLES
 def test_design_point_delivers_the_target_thrust(lime1):
     burn = lime1.burn
     assert burn.thrust_n(lime1.ambient_pa)[0] == pytest.approx(lime1.thrust_n, rel=1e-5)
-    assert burn.chamber_pressure_pa[0] == pytest.approx(20e5, rel=1e-6)
+    assert burn.chamber_pressure_pa[0] == pytest.approx(
+        lime1.spec.engine.chamber_pressure_pa, rel=1e-6
+    )
     assert burn.mixture_ratio[0] == pytest.approx(lime1.mixture_ratio, rel=1e-6)
 
 

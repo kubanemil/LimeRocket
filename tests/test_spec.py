@@ -20,7 +20,7 @@ def test_examples_parse(path):
 
 def test_values_are_converted_to_si():
     s = spec.parse(load_example("lime-1.yaml"))
-    assert s.engine.chamber_pressure_pa == pytest.approx(20e5)
+    assert s.engine.chamber_pressure_pa == pytest.approx(22e5)
     assert s.structure.max_diameter_m == pytest.approx(0.152)
     assert s.feed.oxidizer_line.inner_diameter_m == pytest.approx(7.7e-3)
     assert s.feed.oxidizer_line.roughness_m == pytest.approx(1.5e-6)
