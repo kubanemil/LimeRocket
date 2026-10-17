@@ -28,7 +28,7 @@ Run `limerocket catalog` to list the built-in propellants and materials.
 | `contraction_ratio` | `auto` | Ac/At; `auto` uses Ac/At = 8.0 Dt^-0.6 + 1.25 (Dt in cm) |
 | `convergence_half_angle_deg` | `30` | Convergent cone half-angle, 15 to 60 |
 | `c_star_efficiency` | `0.92` | Delivered c* / ideal c* |
-| `thrust_coefficient_efficiency` | `0.98` | Delivered vacuum Cf / ideal vacuum Cf |
+| `thrust_coefficient_efficiency` | `0.99` | Delivered / ideal vacuum Cf for losses other than divergence (friction, kinetics); the bell's (1 + cos theta_e) / 2 is applied on top |
 | `wall_material` | `ss316` | Chamber and nozzle wall material |
 | `injector.pressure_drop_fraction` | `0.20` | Minimum injector drop as a fraction of Pc |
 | `injector.oxidizer.discharge_coefficient` | `0.7` | Orifice Cd |

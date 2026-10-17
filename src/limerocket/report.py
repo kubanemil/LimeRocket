@@ -171,6 +171,7 @@ def performance_rows(design: Design) -> list[Row]:
         ),
         ("Exit Mach number", fmt(p.exit.mach), ""),
         ("Area ratio Ae/At (optimum expansion)", fmt(p.area_ratio), ""),
+        ("Bell divergence factor (1 + cos theta_e) / 2", fmt(design.divergence_efficiency), ""),
         ("c*, ideal / delivered", f"{fmt(p.c_star_m_s)} / {fmt(design.c_star_m_s)}", "m/s"),
         ("Cf vacuum, ideal / delivered", f"{fmt(p.cf_vacuum)} / {fmt(design.cf_vacuum)}", ""),
         ("Cf at design ambient, ideal / delivered", f"{fmt(p.cf(pa))} / {fmt(design.cf)}", ""),
@@ -190,6 +191,24 @@ def performance_rows(design: Design) -> list[Row]:
             f"{fmt(design.oxidizer_flow_kg_s)} / {fmt(design.fuel_flow_kg_s)}",
             "kg/s",
         ),
+    ]
+
+
+def ideal_gas_rows(design: Design) -> list[list[str]]:
+    p, check = design.ideal, design.ideal_gas
+    pairs = (
+        ("c* [m/s]", p.c_star_m_s, check.c_star_m_s),
+        ("Exit Mach number", p.exit.mach, check.exit_mach),
+        (
+            "Exit pressure / chamber pressure",
+            p.exit_pressure_pa / p.chamber_pressure_pa,
+            check.exit_pressure_ratio,
+        ),
+        ("Cf vacuum", p.cf_vacuum, check.cf_vacuum),
+    )
+    return [
+        [name, fmt(cea), fmt(ideal), f"{100 * (ideal / cea - 1):+.1f} %"]
+        for name, cea, ideal in pairs
     ]
 
 
@@ -466,9 +485,15 @@ def html_report(design: Design, files: list[str]) -> str:
         "<h2>2. Propellant performance</h2>",
         (
             f"<p>Backend: {html.escape(thermo.BACKEND)}. Ideal values are CEA's; delivered "
-            "values apply the c* and Cf efficiencies.</p>"
+            "values apply the c* and Cf efficiencies and the bell's divergence factor.</p>"
         ),
         _table(performance_rows(design)),
+        (
+            "<p>Cross-check: the ideal-rocket relations (Sutton &amp; Biblarz ch. 3) at the "
+            "chamber's gamma and molar mass, held constant. The gap is what shifting "
+            "equilibrium and a changing gamma add.</p>"
+        ),
+        _grid(["Quantity", "CEA", "Ideal gas", "Difference"], ideal_gas_rows(design)),
         "<h2>3. Thrust chamber and nozzle</h2>",
         figure(to_svg(engine_figure(design))),
         _table(chamber_rows(design)),

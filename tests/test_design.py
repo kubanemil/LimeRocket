@@ -1,4 +1,5 @@
 import dataclasses
+import math
 
 import pytest
 
@@ -19,7 +20,9 @@ def test_design_point_delivers_the_target_thrust(lime1):
 
 def test_delivered_vacuum_isp_applies_both_efficiencies(lime1):
     e = lime1.spec.engine
-    expected = lime1.ideal.isp_vacuum_s * e.c_star_efficiency * e.cf_efficiency
+    divergence = lime1.divergence_efficiency
+    assert divergence == pytest.approx(0.5 * (1 + math.cos(math.radians(14.0))), rel=0.01)
+    expected = lime1.ideal.isp_vacuum_s * e.c_star_efficiency * e.cf_efficiency * divergence
     assert lime1.isp_vacuum_s == pytest.approx(expected, rel=1e-12)
     assert lime1.mass_flow_kg_s * lime1.isp_s * G0_M_S2 == pytest.approx(lime1.thrust_n)
 

@@ -22,6 +22,7 @@ from limerocket.feed import (
     simulate_burn,
 )
 from limerocket.hydraulics import Branch, Fluid, Orifices
+from limerocket.nozzle import IdealGasCheck, divergence_efficiency, ideal_gas_check, rao_angles_deg
 from limerocket.spec import DesignSpec
 from limerocket.tanks import Vessel, size_vessel
 from limerocket.thermo import Performance
@@ -85,6 +86,8 @@ class Design:
     mass_flow_kg_s: float
     c_star_m_s: float
     cf_vacuum: float
+    divergence_efficiency: float
+    ideal_gas: IdealGasCheck
     injector: Injector
     oxidizer_line_drop_pa: float
     fuel_line_drop_pa: float
@@ -368,7 +371,9 @@ def _design_once(spec: DesignSpec, mixture_ratio: float, ideal: Performance) -> 
     eng, st, veh = spec.engine, spec.structure, spec.vehicle
     pc, pa = eng.chamber_pressure_pa, eng.design_ambient_pressure_pa
 
-    cf_vacuum = eng.cf_efficiency * ideal.cf_vacuum
+    divergence = divergence_efficiency(rao_angles_deg(ideal.area_ratio)[1])
+    cf_efficiency = divergence * eng.cf_efficiency
+    cf_vacuum = cf_efficiency * ideal.cf_vacuum
     c_star = eng.c_star_efficiency * ideal.c_star_m_s
     throat_area = eng.thrust_n / (cf_vacuum * pc - pa * ideal.area_ratio)
     mass_flow = pc * throat_area / c_star
@@ -398,7 +403,7 @@ def _design_once(spec: DesignSpec, mixture_ratio: float, ideal: Performance) -> 
         throat_area_m2=throat_area,
         area_ratio=ideal.area_ratio,
         c_star_efficiency=eng.c_star_efficiency,
-        cf_efficiency=eng.cf_efficiency,
+        cf_efficiency=cf_efficiency,
         performance=thermo.performance_map(
             eng.oxidizer, eng.fuel, ideal.area_ratio, mixture_ratio, pc
         ),
@@ -462,6 +467,13 @@ def _design_once(spec: DesignSpec, mixture_ratio: float, ideal: Performance) -> 
         mass_flow_kg_s=mass_flow,
         c_star_m_s=c_star,
         cf_vacuum=cf_vacuum,
+        divergence_efficiency=divergence,
+        ideal_gas=ideal_gas_check(
+            ideal.chamber.gamma,
+            ideal.chamber.molar_mass_kg_mol,
+            ideal.chamber.temperature_k,
+            ideal.area_ratio,
+        ),
         injector=f.injector,
         oxidizer_line_drop_pa=f.oxidizer_line_drop_pa,
         fuel_line_drop_pa=f.fuel_line_drop_pa,

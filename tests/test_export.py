@@ -92,6 +92,7 @@ def test_cli_writes_the_report_and_every_export(tmp_path, capsys):
     report = (tmp_path / "report.html").read_text()
     assert report.count("<svg") == 4
     assert "NASA CEA" in report
+    assert "Cross-check" in report
     assert "Apogee" in capsys.readouterr().out
 
 

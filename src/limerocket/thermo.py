@@ -89,10 +89,6 @@ class Performance:
         return self.exit.pressure_pa
 
     @property
-    def exhaust_velocity_m_s(self) -> float:
-        return self.exit.mach * self.exit.sonic_velocity_m_s
-
-    @property
     def isp_vacuum_s(self) -> float:
         return self.c_star_m_s * self.cf_vacuum / G0_M_S2
 

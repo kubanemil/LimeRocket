@@ -314,7 +314,7 @@ def _engine(s: _Section) -> EngineSpec | None:
     contraction = s.optional("contraction_ratio", gt=1)
     half_angle = s.number("convergence_half_angle_deg", 30.0, ge=15, le=60)
     c_star_eff = s.number("c_star_efficiency", 0.92, gt=0, le=1)
-    cf_eff = s.number("thrust_coefficient_efficiency", 0.98, gt=0, le=1)
+    cf_eff = s.number("thrust_coefficient_efficiency", 0.99, gt=0, le=1)
     s.finish()
     if oxidizer is None or fuel is None:
         return None

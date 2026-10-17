@@ -21,29 +21,27 @@ def test_isentropic_relations_match_naca_1135(mach, area_ratio, pressure_ratio):
     )
 
 
-def test_area_ratio_from_pressure_ratio_agrees_with_mach_relations():
-    gamma, mach = 1.22, 3.1
-    pe_pc = nozzle.pressure_ratio_from_mach(gamma, mach)
-    assert nozzle.area_ratio_from_pressure_ratio(gamma, pe_pc) == pytest.approx(
-        nozzle.area_ratio_from_mach(gamma, mach), rel=1e-12
-    )
-
-
 def test_ideal_engine_matches_proptools_worked_example():
-    # proptools nozzle tutorial (after Sutton & Biblarz ch. 3): pc 10 MPa, pe = pa = 100 kPa,
-    # gamma 1.2, M 20 g/mol, Tc 3000 K, throat diameter 0.1 m.
-    gamma, molar_mass, tc, pc, pe = 1.2, 20e-3, 3000.0, 10e6, 100e3
+    # proptools nozzle tutorial (after Sutton & Biblarz ch. 3): pc 10 MPa, gamma 1.2,
+    # M 20 g/mol, Tc 3000 K, throat diameter 0.1 m, Ae/At 11.9 gives pe = pa = 100 kPa.
+    gamma, molar_mass, tc, pc, eps = 1.2, 20e-3, 3000.0, 10e6, 11.9
+    check = nozzle.ideal_gas_check(gamma, molar_mass, tc, eps)
+    pe_pc = check.exit_pressure_ratio
+    cf = nozzle.thrust_coefficient(gamma, pe_pc, pe_pc, eps)
     throat_area = math.pi * 0.05**2
-    eps = nozzle.area_ratio_from_pressure_ratio(gamma, pe / pc)
-    c_star = nozzle.characteristic_velocity(gamma, molar_mass, tc)
-    cf = nozzle.thrust_coefficient(gamma, pe / pc, pe / pc, eps)
-    ve = nozzle.exhaust_velocity(gamma, molar_mass, tc, pe / pc)
-    assert eps == pytest.approx(11.9, abs=0.05)
-    assert c_star == pytest.approx(1722, abs=0.5)
-    assert ve == pytest.approx(2832, abs=0.5)
-    assert c_star * cf / G0_M_S2 == pytest.approx(288.7, abs=0.1)
-    assert cf * pc * throat_area == pytest.approx(129.2e3, abs=50)
-    assert pc * throat_area / c_star == pytest.approx(45.6, abs=0.05)
+    assert pe_pc * pc == pytest.approx(100e3, abs=500)
+    assert check.c_star_m_s == pytest.approx(1722, abs=0.5)
+    assert check.c_star_m_s * cf == pytest.approx(2832, abs=3)
+    assert check.c_star_m_s * cf / G0_M_S2 == pytest.approx(288.7, abs=0.3)
+    assert cf * pc * throat_area == pytest.approx(129.2e3, abs=150)
+    assert pc * throat_area / check.c_star_m_s == pytest.approx(45.6, abs=0.05)
+    assert check.cf_vacuum == pytest.approx(cf + pe_pc * eps)
+
+
+def test_divergence_factor_matches_sutton_table_for_a_15_degree_cone():
+    # Sutton & Biblarz table 3-3: lambda = 0.9830 at 15 deg and 0.9698 at 20 deg.
+    assert nozzle.divergence_efficiency(15.0) == pytest.approx(0.9830, abs=1e-4)
+    assert nozzle.divergence_efficiency(20.0) == pytest.approx(0.9698, abs=1e-4)
 
 
 def test_thrust_coefficient_approaches_the_infinite_expansion_limit():

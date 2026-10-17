@@ -14,7 +14,7 @@ engine:
   contraction_ratio: auto
   convergence_half_angle_deg: 30
   c_star_efficiency: 0.92
-  thrust_coefficient_efficiency: 0.98
+  thrust_coefficient_efficiency: 0.99
   wall_material: ss316
   injector:
     pressure_drop_fraction: 0.20

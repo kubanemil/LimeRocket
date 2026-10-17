@@ -14,7 +14,7 @@ engine:
   l_star_m: 1.5
   convergence_half_angle_deg: 35
   c_star_efficiency: 0.93
-  thrust_coefficient_efficiency: 0.98
+  thrust_coefficient_efficiency: 0.99
   wall_material: ss316
   injector:
     pressure_drop_fraction: 0.25

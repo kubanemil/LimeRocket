@@ -35,18 +35,6 @@ def mach_from_area_ratio(gamma: float, area_ratio: float, *, supersonic: bool = 
     return float(brentq(lambda m: area_ratio_from_mach(gamma, m) - area_ratio, lo, hi, xtol=1e-14))
 
 
-def area_ratio_from_pressure_ratio(gamma: float, exit_to_chamber: float) -> float:
-    """Optimum-expansion area ratio Ae/At for pe/pc (Sutton & Biblarz eq. 3-25)."""
-    g = gamma
-    pr = exit_to_chamber
-    inverse = (
-        ((g + 1.0) / 2.0) ** (1.0 / (g - 1.0))
-        * pr ** (1.0 / g)
-        * math.sqrt((g + 1.0) / (g - 1.0) * (1.0 - pr ** ((g - 1.0) / g)))
-    )
-    return float(1.0 / inverse)
-
-
 def thrust_coefficient(
     gamma: float, exit_to_chamber: float, ambient_to_chamber: float, area_ratio: float
 ) -> float:
@@ -71,20 +59,35 @@ def characteristic_velocity(gamma: float, molar_mass_kg_mol: float, chamber_temp
     )
 
 
-def exhaust_velocity(
-    gamma: float, molar_mass_kg_mol: float, chamber_temp_k: float, exit_to_chamber: float
-) -> float:
-    """Ideal exhaust velocity for full expansion to pe/pc (Sutton & Biblarz eq. 3-16)."""
-    g = gamma
-    gas_constant = R_UNIVERSAL_J_MOL_K / molar_mass_kg_mol
-    return math.sqrt(
-        2.0
-        * g
-        / (g - 1.0)
-        * gas_constant
-        * chamber_temp_k
-        * (1.0 - exit_to_chamber ** ((g - 1.0) / g))
+@dataclass(frozen=True)
+class IdealGasCheck:
+    """Ideal-rocket values from the chamber state at constant gamma, to set beside CEA's."""
+
+    c_star_m_s: float
+    exit_mach: float
+    exit_pressure_ratio: float
+    cf_vacuum: float
+
+
+def ideal_gas_check(
+    gamma: float, molar_mass_kg_mol: float, chamber_temp_k: float, area_ratio: float
+) -> IdealGasCheck:
+    mach = mach_from_area_ratio(gamma, area_ratio)
+    pe_pc = pressure_ratio_from_mach(gamma, mach)
+    return IdealGasCheck(
+        c_star_m_s=characteristic_velocity(gamma, molar_mass_kg_mol, chamber_temp_k),
+        exit_mach=mach,
+        exit_pressure_ratio=pe_pc,
+        cf_vacuum=thrust_coefficient(gamma, pe_pc, 0.0, area_ratio),
     )
+
+
+def divergence_efficiency(exit_angle_deg: float) -> float:
+    """Momentum lost to a non-axial exit flow, (1 + cos alpha) / 2 (Sutton & Biblarz eq. 3-34).
+
+    Taken at the bell's exit angle theta_e, as is usual for parabolic bells.
+    """
+    return 0.5 * (1.0 + math.cos(math.radians(exit_angle_deg)))
 
 
 # Rao's optimum-contour wall angles for an 80 % bell, digitized from NASA SP-8120 (1976)
@@ -126,11 +129,6 @@ class BellNozzle:
     @property
     def length_m(self) -> float:
         return float(self.x_m[-1])
-
-    @property
-    def divergence_efficiency(self) -> float:
-        """Exit-angle momentum factor (1 + cos theta_e) / 2, Sutton & Biblarz eq. 3-34."""
-        return 0.5 * (1.0 + math.cos(math.radians(self.theta_e_deg)))
 
 
 def bell_length_m(throat_radius_m: float, area_ratio: float) -> float:
