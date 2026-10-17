@@ -75,6 +75,43 @@ def test_custom_propellant_from_cea_species():
     assert [i.cea_name for i in s.engine.fuel.ingredients] == ["C2H5OH(L)", "H2O(L)"]
 
 
+def test_custom_propellant_fractions_within_tolerance_are_normalised():
+    # Regression: 3 x 0.3333333 passed the spec check, then Propellant raised a bare ValueError.
+    data = load_example("lime-1.yaml")
+    data["engine"]["fuel"] = {
+        "name": "thirds",
+        "ingredients": {"C2H5OH(L)": 0.3333333, "CH3OH(L)": 0.3333333, "H2O(L)": 0.3333333},
+        "temperature_k": 298.15,
+        "density_kg_m3": 850,
+        "viscosity_pa_s": 1.4e-3,
+    }
+    fuel = spec.parse(data).engine.fuel
+    assert sum(i.mass_fraction for i in fuel.ingredients) == pytest.approx(1.0, abs=1e-12)
+
+
+def test_unknown_cea_species_is_a_spec_error():
+    data = load_example("lime-1.yaml")
+    data["engine"]["fuel"] = {
+        "name": "mystery",
+        "ingredients": {"Unobtainium(L)": 1.0},
+        "temperature_k": 298.15,
+        "density_kg_m3": 850,
+        "viscosity_pa_s": 1.4e-3,
+    }
+    with pytest.raises(spec.SpecError, match="not in the CEA database: Unobtainium"):
+        spec.parse(data)
+
+
+@pytest.mark.parametrize(("pc_bar", "ambient_bar"), [(1.005, 1.01325), (1.5, 1.0), (3.0, 1.6)])
+def test_chamber_pressure_must_choke_the_nozzle(pc_bar, ambient_bar):
+    # Regression: Pc barely above ambient parsed fine and crashed the burn integrator.
+    data = load_example("lime-1.yaml")
+    data["engine"]["chamber_pressure_bar"] = pc_bar
+    data["engine"]["design_ambient_pressure_bar"] = ambient_bar
+    with pytest.raises(spec.SpecError, match="chamber_pressure_bar: must be at least 2"):
+        spec.parse(data)
+
+
 def test_custom_propellant_fractions_must_sum_to_one():
     data = load_example("lime-1.yaml")
     data["engine"]["fuel"] = {
@@ -104,6 +141,11 @@ def test_fixed_mixture_ratio_and_auto_values():
     s = spec.parse(data)
     assert s.engine.mixture_ratio == 1.2
     assert s.engine.contraction_ratio == 6
+    del data["engine"]["mixture_ratio"]
+    assert spec.parse(data).engine.mixture_ratio is None
+    data["engine"]["mixture_ratio"] = "best"
+    with pytest.raises(spec.SpecError, match="mixture_ratio: expected a number or 'auto'"):
+        spec.parse(data)
 
 
 def test_invalid_yaml_is_a_spec_error(tmp_path):

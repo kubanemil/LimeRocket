@@ -9,7 +9,7 @@ engine:
   design_ambient_pressure_bar: 1.01325
   oxidizer: lox
   fuel: ethanol75
-  mixture_ratio: optimize
+  mixture_ratio: auto
   l_star_m: 1.2
   contraction_ratio: auto
   convergence_half_angle_deg: 30

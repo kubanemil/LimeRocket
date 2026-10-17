@@ -40,7 +40,7 @@ Then open `out/report.html`. Every spec key, with its unit and default, is in
 
 | Stage | What happens | Key relations |
 |---|---|---|
-| Chemistry | CEA shifting equilibrium in an infinite-area combustor, expanded to the design ambient. With `mixture_ratio: optimize` a bounded search finds the O/F with the highest Isp. | Gibbs energy minimisation (Gordon & McBride, RP-1311); Isp = c* Cf / g0 |
+| Chemistry | CEA shifting equilibrium in an infinite-area combustor, expanded to the design ambient. With `mixture_ratio: auto` a bounded search finds the O/F with the highest Isp. | Gibbs energy minimisation (Gordon & McBride, RP-1311); Isp = c* Cf / g0 |
 | Thrust chamber | Throat from the thrust target, chamber volume from L*, contraction ratio from the Humble correlation unless given, 80 % Rao bell, wall from hoop stress, injector plate from plate bending. | At = F / (Cf Pc); Vc = L* At; Ac/At = 8.0 Dt^-0.6 + 1.25; quadratic Bezier bell with SP-8120 angles; Roark flat plate |
 | Injector | Orifices sized for the design flow at a minimum drop of 20 % of Pc. One tank pressure serves both sides, so the side with less line loss gets the stiffer injector. | mdot = Cd A sqrt(2 rho dp) |
 | Feed lines | Pressure drop for each branch, laminar to fully rough. | Darcy-Weisbach dp = (f L/D + K) rho v^2 / 2 with Colebrook-White f |

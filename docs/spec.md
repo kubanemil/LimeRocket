@@ -23,7 +23,7 @@ Run `limerocket catalog` to list the built-in propellants and materials.
 | `design_ambient_pressure_bar` | `1.01325` | The nozzle is optimally expanded to this pressure |
 | `oxidizer` | required | Catalog key (`lox`, `htp90`) or a custom propellant, see below |
 | `fuel` | required | Catalog key (`ethanol`, `ethanol75`, `ipa`, `rp1`, `methane`) or custom |
-| `mixture_ratio` | `optimize` | O/F by mass, or `optimize` for maximum Isp at the design point |
+| `mixture_ratio` | `auto` | O/F by mass; `auto` picks the O/F with maximum Isp at the design point |
 | `l_star_m` | `1.0` | Characteristic length, chamber volume / throat area |
 | `contraction_ratio` | `auto` | Ac/At; `auto` uses Ac/At = 8.0 Dt^-0.6 + 1.25 (Dt in cm) |
 | `convergence_half_angle_deg` | `30` | Convergent cone half-angle, 15 to 60 |
