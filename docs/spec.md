@@ -53,7 +53,6 @@ fuel:
 | `mode` | `regulated` | `regulated` (bottle and regulator) or `blowdown` (ullage only) |
 | `pressurant` | `helium` | `helium` or `nitrogen` |
 | `pressurant_temperature_k` | `293.15` | Initial gas temperature |
-| `polytropic_exponent` | `auto` | Gas expansion exponent; `auto` is the gas's gamma (adiabatic) |
 | `residual_fraction` | `0.03` | Unusable propellant, as a fraction of the usable load |
 | `lines.oxidizer.length_m` | required | Tank-to-injector line length |
 | `lines.oxidizer.inner_diameter_mm` | required | Line inner diameter |
@@ -76,6 +75,11 @@ Blowdown mode only:
 | Key | Default | Meaning |
 |---|---|---|
 | `blowdown_ratio` | `2.5` | Initial over final tank pressure |
+| `polytropic_exponent` | `auto` | Ullage expansion exponent, 1 (isothermal) to gamma; `auto` is the gas's gamma (adiabatic) |
+
+In regulated mode the bottle and ullage are adiabatic. Below the dropout pressure the
+regulator is wide open and the tanks trail the bottle by the dropout margin, so tank pressure
+falls smoothly from the set point.
 
 ## `structure`
 

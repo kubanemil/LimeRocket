@@ -331,19 +331,18 @@ REGULATED_KEYS = (
     "pressurant_margin",
     "ullage_fraction",
 )
-BLOWDOWN_KEYS = ("blowdown_ratio",)
+BLOWDOWN_KEYS = ("blowdown_ratio", "polytropic_exponent")
 
 
 def _feed(s: _Section) -> FeedSpec:
     mode = s.choice("mode", {m.value: m for m in FeedMode}, FeedMode.REGULATED.value)
-    gas: Gas | None = s.choice("pressurant", GASES, "helium")
-    exponent = s.optional("polytropic_exponent", ge=1, le=1.7)
+    gas: Gas = s.choice("pressurant", GASES, "helium")
     lines = s.section("lines")
     common: dict[str, Any] = {
         "mode": mode,
         "pressurant": gas,
         "pressurant_temperature_k": s.number("pressurant_temperature_k", 293.15, gt=0),
-        "polytropic_exponent": exponent or (gas.gamma if gas else 1.4),
+        "polytropic_exponent": gas.gamma,
         "residual_fraction": s.number("residual_fraction", 0.03, ge=0, lt=1),
         "oxidizer_line": _line(lines.section("oxidizer")),
         "fuel_line": _line(lines.section("fuel")),
@@ -351,6 +350,9 @@ def _feed(s: _Section) -> FeedSpec:
     lines.finish()
     if mode is FeedMode.BLOWDOWN:
         s.forbid(REGULATED_KEYS, "applies only to mode: regulated")
+        exponent = s.optional("polytropic_exponent", ge=1, le=1.7)
+        if exponent is not None:
+            common["polytropic_exponent"] = exponent
         spec = FeedSpec(**common, blowdown_ratio=s.number("blowdown_ratio", 2.5, gt=1))
     else:
         s.forbid(BLOWDOWN_KEYS, "applies only to mode: blowdown")
