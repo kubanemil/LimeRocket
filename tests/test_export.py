@@ -1,4 +1,5 @@
 import csv
+import dataclasses
 import math
 from collections import Counter
 
@@ -29,6 +30,20 @@ def test_stl_wall_is_watertight_and_has_the_revolved_volume(lime1):
     pappus = math.pi * np.trapezoid(ring, x) * 1e9
     polygon = export.STL_SEGMENTS / (2 * math.pi) * math.sin(2 * math.pi / export.STL_SEGMENTS)
     assert signed == pytest.approx(pappus * polygon, rel=0.02)
+
+
+def test_thick_wall_offset_stays_monotonic_through_the_throat(lime1, tmp_path):
+    # Regression: a wall thicker than the 0.382 Rt throat arc folded the offset contour,
+    # leaving x running backwards in the CSV, DXF and STL.
+    chamber = dataclasses.replace(lime1.chamber, wall_thickness_m=0.006)
+    assert chamber.wall_thickness_m > 0.382 * chamber.throat_radius_m
+    xo, ro = export.outer_wall(chamber)
+    assert np.all(np.diff(xo) > 0)
+    inner_at_outer_x = np.interp(xo, chamber.x_m, chamber.r_m)
+    assert np.all(ro > inner_at_outer_x)
+    export.write_contour_csv(tmp_path / "c.csv", chamber)
+    rows = np.loadtxt(tmp_path / "c.csv", delimiter=",", skiprows=1)
+    assert np.all(rows[:, 2] > rows[:, 1])
 
 
 def test_dxf_holds_the_closed_wall_profile_in_millimetres(lime1, tmp_path):

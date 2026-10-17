@@ -22,13 +22,18 @@ ENG_RAMP_S = 0.01  # RASP curves start and end at zero thrust; 10 ms edges stand
 
 
 def outer_wall(chamber: ThrustChamber) -> tuple[FloatArray, FloatArray]:
-    """Inner contour offset outward along its normal by the wall thickness."""
+    """Inner contour offset outward along its normal by the wall thickness.
+
+    Where the wall is thicker than the throat's radius of curvature the offset folds back on
+    itself; points behind the furthest x reached so far are dropped, which removes the loop.
+    """
     x, r = chamber.x_m, chamber.r_m
     dx, dr = np.gradient(x), np.gradient(r)
     norm = np.hypot(dx, dr)
     xo = x - chamber.wall_thickness_m * dr / norm
     ro = r + chamber.wall_thickness_m * dx / norm
-    keep = np.concatenate([[True], np.diff(xo) > 0.0])
+    reached = np.maximum.accumulate(xo)
+    keep = np.concatenate([[True], xo[1:] > reached[:-1]])
     return xo[keep], ro[keep]
 
 
