@@ -5,12 +5,12 @@ from __future__ import annotations
 import csv
 import math
 import struct
-from datetime import date
 from pathlib import Path
 
 import numpy as np
 import numpy.typing as npt
 
+from limerocket import __version__
 from limerocket.chamber import ThrustChamber
 from limerocket.design import Design
 from limerocket.units import P_STANDARD_PA
@@ -142,7 +142,7 @@ def write_eng(path: Path, design: Design) -> None:
     code = "".join(ch for ch in spec.name if ch.isalnum() or ch in "-_") or "LIME"
     lines = [
         f"; {spec.name}: {spec.engine.oxidizer.name} / {spec.engine.fuel.name}",
-        f"; LimeRocket {date.today().isoformat()}, sea-level thrust, liquid pressure-fed",
+        f"; LimeRocket {__version__}, sea-level thrust, liquid pressure-fed",
         (
             f"{code} {spec.structure.max_diameter_m * MM_PER_M:.0f} {length * MM_PER_M:.0f} P "
             f"{expelled:.4f} {propulsion:.4f} LimeRocket"

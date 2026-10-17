@@ -54,6 +54,7 @@ STYLE: dict[RcKeyType, Any] = {
     "font.family": "sans-serif",
     "font.sans-serif": ["Inter", "Helvetica", "Arial", "DejaVu Sans"],
     "svg.fonttype": "none",
+    "svg.hashsalt": "limerocket",
 }
 
 
@@ -65,7 +66,8 @@ def _style() -> Iterator[None]:
 
 def to_svg(fig: Figure) -> str:
     buf = io.StringIO()
-    fig.savefig(buf, format="svg", bbox_inches="tight")
+    with _style():
+        fig.savefig(buf, format="svg", bbox_inches="tight", metadata={"Date": None})
     return buf.getvalue()
 
 
