@@ -25,12 +25,12 @@ limerocket design examples/lime-1.yaml -o out/
 Lime-1: Liquid oxygen / 75% ethanol, 25% water (by mass), regulated feed
 
   O/F 1.372   Pc 22.00 bar   Tc 3,096 K   Ae/At 4.250
-  Isp 218.9 s (vac 249.2 s)   mdot 0.4658 kg/s   c* 1,518 m/s
-  Throat 20.23 mm   chamber 51.55 mm   exit 41.71 mm   length 233.3 mm
-  Tank pressure 27.55 bar   injector dp ox/fuel 4.479/4.400 bar
+  Isp 217.9 s (vac 248.2 s)   mdot 0.4680 kg/s   c* 1,518 m/s
+  Throat 20.28 mm   chamber 51.64 mm   exit 41.81 mm   length 233.6 mm
+  Tank pressure 27.56 bar   injector dp ox/fuel 4.479/4.400 bar
   Burn 6.000 s   impulse 6,000 N s   thrust 1,000.0 -> 1,000.0 N
-  Mass dry 9.274 kg   lift-off 12.18 kg   length 1.952 m
-  Apogee 3,169 m   max Mach 1.01   max q 62.80 kPa   max accel 7.49 g
+  Mass dry 9.279 kg   lift-off 12.20 kg   length 1.953 m
+  Apogee 3,168 m   max Mach 1.01   max q 62.77 kPa   max accel 7.48 g
 ```
 
 Then open `out/report.html`. Every spec key, with its unit and default, is in
@@ -40,11 +40,11 @@ Then open `out/report.html`. Every spec key, with its unit and default, is in
 
 | Stage | What happens | Key relations |
 |---|---|---|
-| Chemistry | CEA shifting equilibrium in an infinite-area combustor, expanded to the design ambient. With `mixture_ratio: optimize` a bounded search finds the O/F with the highest Isp. | Gibbs energy minimisation (Gordon & McBride, RP-1311); Isp = c* Cf / g0 |
-| Thrust chamber | Throat from the thrust target, chamber volume from L*, contraction ratio from the Humble correlation unless given, 80 % Rao bell, wall from hoop stress, injector plate from plate bending. | At = F / (Cf Pc); Vc = L* At; Ac/At = 8.0 Dt^-0.6 + 1.25; quadratic Bezier bell with SP-8120 angles; Roark flat plate |
+| Chemistry | CEA shifting equilibrium in an infinite-area combustor, expanded to the design ambient. With `mixture_ratio: auto` a bounded search finds the O/F with the highest Isp. The report sets the ideal-rocket relations at constant gamma beside CEA as a cross-check. | Gibbs energy minimisation (Gordon & McBride, RP-1311); Isp = c* Cf / g0 |
+| Thrust chamber | Throat from the thrust target, chamber volume from L*, contraction ratio from the Humble correlation unless given, 80 % Rao bell, wall from hoop stress, injector plate from plate bending. Delivered Cf carries the bell's divergence loss. | At = F / (Cf Pc); Vc = L* At; Ac/At = 8.0 Dt^-0.6 + 1.25; quadratic Bezier bell with SP-8120 angles; divergence (1 + cos theta_e) / 2; Roark flat plate |
 | Injector | Orifices sized for the design flow at a minimum drop of 20 % of Pc. One tank pressure serves both sides, so the side with less line loss gets the stiffer injector. | mdot = Cd A sqrt(2 rho dp) |
 | Feed lines | Pressure drop for each branch, laminar to fully rough. | Darcy-Weisbach dp = (f L/D + K) rho v^2 / 2 with Colebrook-White f |
-| Pressurisation | Regulated: a bottle sized by an adiabatic energy balance. Blowdown: tank ullage sized from the blowdown ratio. | Vb = gamma p dV / (pb0 - pbf); p V^n = const |
+| Pressurisation | Regulated: a bottle sized by an adiabatic energy balance; below dropout the open regulator keeps its minimum drop, so tank pressure trails the bottle down from the set point. Blowdown: tank ullage sized from the blowdown ratio. | Vb = gamma p dV / (pb0 - pbf); p V^n = const |
 | Burn | An ODE over the burn. At each step the chamber pressure balances injected flow against nozzle flow, using a CEA map at the fixed area ratio. Gives Pc, thrust, Isp, O/F drift and tank pressures over time, regulator dropout and which tank empties first. | mdot eta c*(O/F, Pc) = Pc At; `solve_ivp` with depletion and dropout events |
 | Structures | Propellant tanks, pressurant bottle, mass budget. Spheres when they fit, otherwise cylinders with hemispherical heads. | sigma_hoop = p r / t; sigma_long = p r / 2t; sphere p r / 2t |
 | Flight | Vertical, variable mass, to apogee. Thrust gets the back-pressure correction at altitude. Optional search of the burn time that hits an apogee target. | m dv/dt = F - D - m g; USSA 1976; Cd(Mach); g ~ 1/r^2 |
@@ -54,7 +54,7 @@ so the burn lasts `burn_time_s`.
 
 ## Validation
 
-`./do test` checks each stage against a published value (128 tests, about 15 s).
+`./do test` checks each stage against a published value (136 tests, about 15 s).
 
 | Case | Reference | Max error |
 |---|---|---|
@@ -62,7 +62,8 @@ so the burn lasts `burn_time_s`.
 | NTO/MMH, 1000 psia, O/F 2.5, frozen at the throat: c*, Ae/At, Isp, Ivac | NASA RP-1311 example 12, CEA2 reference output | < 0.001 % |
 | LOX/LH2, 1000 psia, O/F 6, Ae/At 40: Tc, c*, Cf, Isp, Ivac | RocketCEA documentation | 0.007 % |
 | A/A* and p/p0 at Mach 0.5, 2 and 3, gamma 1.4 | NACA Report 1135 tables | 0.014 % (table rounding) |
-| Ideal engine: Ae/At, c*, ve, Isp, thrust, flow | proptools worked example (Sutton & Biblarz ch. 3) | 0.24 % (Ae/At printed as 11.9) |
+| Ideal engine: exit pressure from Ae/At, c*, ve, Isp, thrust, flow | proptools worked example (Sutton & Biblarz ch. 3) | 0.32 % (Ae/At printed as 11.9) |
+| Divergence factor at 15 and 20 deg | Sutton & Biblarz table 3-3 | 0.005 % |
 | Bell angles at Ae/At 70 | Newlands (2017), after NASA SP-8120 | 0.5 deg |
 | Colebrook, Re 1e4 to 1e8, e/D 0 to 0.05 | Haaland (1983) | 1.4 % (Haaland's own accuracy) |
 | Colebrook at Re 1e5, e/D 0.001, and fully rough e/D 0.01 | Moody chart (1944) | 0.12 % |
@@ -153,7 +154,7 @@ docs/spec.md      every spec key
 
 - No heat transfer. Walls are sized for pressure at room-temperature strength; a real chamber
   needs cooling or an ablative liner.
-- Losses enter only through the c* and Cf efficiencies in the spec.
+- Losses enter only through the c* and Cf efficiencies in the spec and the bell's divergence factor.
 - The Rao angle chart covers Ae/At 4 to 100. Outside it the angles are clamped and the report
   says so.
 - The pressurant is an ideal gas. Helium at 300 bar holds about 12 % less mass than an ideal gas

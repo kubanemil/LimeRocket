@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+FRACTION_TOLERANCE = 1e-6
+
 
 class Role(StrEnum):
     OXIDIZER = "oxidizer"
@@ -30,7 +32,7 @@ class Propellant:
 
     def __post_init__(self) -> None:
         total = sum(i.mass_fraction for i in self.ingredients)
-        if abs(total - 1.0) > 1e-9:
+        if abs(total - 1.0) > FRACTION_TOLERANCE:
             raise ValueError(f"{self.key}: ingredient mass fractions sum to {total}, not 1")
 
 

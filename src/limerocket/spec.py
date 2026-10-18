@@ -10,13 +10,13 @@ from typing import Any
 
 import yaml
 
-from limerocket import materials, propellants
+from limerocket import materials, propellants, thermo
 from limerocket.feed import GASES, FeedMode, Gas
 from limerocket.hydraulics import Line
 from limerocket.materials import Material
-from limerocket.propellants import Ingredient, Propellant, Role
+from limerocket.propellants import FRACTION_TOLERANCE, Ingredient, Propellant, Role
 from limerocket.trajectory import GENERIC_CD_TABLE
-from limerocket.units import M3_PER_L, M_PER_MM, P_STANDARD_PA, PA_PER_BAR
+from limerocket.units import M3_PER_L, M_PER_UM, P_STANDARD_PA, bar_to_pa, mm_to_m, pa_to_bar
 
 
 class SpecError(ValueError):
@@ -104,6 +104,8 @@ class DesignSpec:
 
 
 _MISSING: Any = object()
+# Choked flow needs Pc/pa above about 1.8 for gamma 1.1 to 1.4; 2 leaves a little margin.
+MIN_CHAMBER_TO_AMBIENT = 2.0
 AUTO = "auto"
 
 
@@ -224,7 +226,10 @@ def _propellant(section: _Section, key: str, role: Role) -> Propellant | None:
         except KeyError as exc:
             section.error(key, str(exc.args[0]))
             return None
-    custom = _Section(value, section.key(key), section.problems)
+    return _custom_propellant(_Section(value, section.key(key), section.problems), role)
+
+
+def _custom_propellant(custom: _Section, role: Role) -> Propellant | None:
     name = custom.text("name")
     ingredients_raw = custom.raw("ingredients")
     ingredients: list[Ingredient] = []
@@ -241,8 +246,12 @@ def _propellant(section: _Section, key: str, role: Role) -> Propellant | None:
     viscosity = custom.number("viscosity_pa_s", gt=0)
     custom.finish()
     total = sum(i.mass_fraction for i in ingredients)
-    if ingredients and abs(total - 1.0) > 1e-6:
+    if ingredients and abs(total - 1.0) > FRACTION_TOLERANCE:
         custom.error("ingredients", f"mass fractions must sum to 1, got {total:g}")
+        return None
+    missing = thermo.unknown_species([i.cea_name for i in ingredients])
+    if missing:
+        custom.error("ingredients", f"not in the CEA database: {', '.join(missing)}")
         return None
     if not ingredients or any(math.isnan(v) for v in (temperature, density, viscosity)):
         return None
@@ -250,7 +259,7 @@ def _propellant(section: _Section, key: str, role: Role) -> Propellant | None:
         key=name or "custom",
         name=name or "custom",
         role=role,
-        ingredients=tuple(ingredients),
+        ingredients=tuple(Ingredient(i.cea_name, i.mass_fraction / total) for i in ingredients),
         temperature_k=temperature,
         density_kg_m3=density,
         viscosity_pa_s=viscosity,
@@ -270,8 +279,8 @@ def _injector_side(section: _Section) -> InjectorSide:
 def _line(section: _Section) -> Line:
     line = Line(
         length_m=section.number("length_m", ge=0),
-        inner_diameter_m=section.number("inner_diameter_mm", gt=0) * M_PER_MM,
-        roughness_m=section.number("roughness_um", 1.5, ge=0) * 1e-6,
+        inner_diameter_m=mm_to_m(section.number("inner_diameter_mm", gt=0)),
+        roughness_m=section.number("roughness_um", 1.5, ge=0) * M_PER_UM,
         minor_loss_k=section.number("minor_loss_k", 0.0, ge=0),
     )
     section.finish()
@@ -281,11 +290,7 @@ def _line(section: _Section) -> Line:
 def _engine(s: _Section) -> EngineSpec | None:
     oxidizer = _propellant(s, "oxidizer", Role.OXIDIZER)
     fuel = _propellant(s, "fuel", Role.FUEL)
-    mixture: float | None = None
-    if s.data.get("mixture_ratio", "optimize") == "optimize":
-        s.used.add("mixture_ratio")
-    else:
-        mixture = s.number("mixture_ratio", gt=0)
+    mixture = s.optional("mixture_ratio", gt=0)
     material = s.choice("wall_material", materials.CATALOG, "ss316")
     inj = s.section("injector")
     injector = InjectorSpec(
@@ -296,21 +301,28 @@ def _engine(s: _Section) -> EngineSpec | None:
     inj.finish()
     thrust = s.number("thrust_n", gt=0)
     burn_time = s.number("burn_time_s", gt=0)
-    chamber_pressure = s.number("chamber_pressure_bar", gt=1) * PA_PER_BAR
-    ambient = s.number("design_ambient_pressure_bar", P_STANDARD_PA / PA_PER_BAR, gt=0)
+    chamber_pressure = s.number("chamber_pressure_bar", gt=0)
+    ambient = s.number("design_ambient_pressure_bar", pa_to_bar(P_STANDARD_PA), gt=0)
+    if chamber_pressure < MIN_CHAMBER_TO_AMBIENT * ambient:
+        s.error(
+            "chamber_pressure_bar",
+            f"must be at least {MIN_CHAMBER_TO_AMBIENT:g} x design_ambient_pressure_bar "
+            f"({MIN_CHAMBER_TO_AMBIENT * ambient:g} bar) for the nozzle to choke, "
+            f"got {chamber_pressure:g}",
+        )
     l_star = s.number("l_star_m", 1.0, gt=0)
     contraction = s.optional("contraction_ratio", gt=1)
     half_angle = s.number("convergence_half_angle_deg", 30.0, ge=15, le=60)
     c_star_eff = s.number("c_star_efficiency", 0.92, gt=0, le=1)
-    cf_eff = s.number("thrust_coefficient_efficiency", 0.98, gt=0, le=1)
+    cf_eff = s.number("thrust_coefficient_efficiency", 0.99, gt=0, le=1)
     s.finish()
     if oxidizer is None or fuel is None:
         return None
     return EngineSpec(
         thrust_n=thrust,
         burn_time_s=burn_time,
-        chamber_pressure_pa=chamber_pressure,
-        design_ambient_pressure_pa=ambient * PA_PER_BAR,
+        chamber_pressure_pa=bar_to_pa(chamber_pressure),
+        design_ambient_pressure_pa=bar_to_pa(ambient),
         oxidizer=oxidizer,
         fuel=fuel,
         mixture_ratio=mixture,
@@ -331,19 +343,18 @@ REGULATED_KEYS = (
     "pressurant_margin",
     "ullage_fraction",
 )
-BLOWDOWN_KEYS = ("blowdown_ratio",)
+BLOWDOWN_KEYS = ("blowdown_ratio", "polytropic_exponent")
 
 
 def _feed(s: _Section) -> FeedSpec:
     mode = s.choice("mode", {m.value: m for m in FeedMode}, FeedMode.REGULATED.value)
-    gas: Gas | None = s.choice("pressurant", GASES, "helium")
-    exponent = s.optional("polytropic_exponent", ge=1, le=1.7)
+    gas: Gas = s.choice("pressurant", GASES, "helium")
     lines = s.section("lines")
     common: dict[str, Any] = {
         "mode": mode,
         "pressurant": gas,
         "pressurant_temperature_k": s.number("pressurant_temperature_k", 293.15, gt=0),
-        "polytropic_exponent": exponent or (gas.gamma if gas else 1.4),
+        "polytropic_exponent": gas.gamma,
         "residual_fraction": s.number("residual_fraction", 0.03, ge=0, lt=1),
         "oxidizer_line": _line(lines.section("oxidizer")),
         "fuel_line": _line(lines.section("fuel")),
@@ -351,6 +362,9 @@ def _feed(s: _Section) -> FeedSpec:
     lines.finish()
     if mode is FeedMode.BLOWDOWN:
         s.forbid(REGULATED_KEYS, "applies only to mode: regulated")
+        exponent = s.optional("polytropic_exponent", ge=1, le=1.7)
+        if exponent is not None:
+            common["polytropic_exponent"] = exponent
         spec = FeedSpec(**common, blowdown_ratio=s.number("blowdown_ratio", 2.5, gt=1))
     else:
         s.forbid(BLOWDOWN_KEYS, "applies only to mode: blowdown")
@@ -358,10 +372,11 @@ def _feed(s: _Section) -> FeedSpec:
         spec = FeedSpec(
             **common,
             ullage_fraction=s.number("ullage_fraction", 0.05, gt=0, lt=1),
-            bottle_pressure_pa=s.number("bottle_pressure_bar", 300.0, gt=0) * PA_PER_BAR,
+            bottle_pressure_pa=bar_to_pa(s.number("bottle_pressure_bar", 300.0, gt=0)),
             bottle_volume_m3=None if volume_l is None else volume_l * M3_PER_L,
-            regulator_dropout_margin_pa=s.number("regulator_dropout_margin_bar", 10.0, ge=0)
-            * PA_PER_BAR,
+            regulator_dropout_margin_pa=bar_to_pa(
+                s.number("regulator_dropout_margin_bar", 10.0, ge=0)
+            ),
             pressurant_margin=s.number("pressurant_margin", 0.20, ge=0),
         )
     s.finish()
@@ -370,12 +385,12 @@ def _feed(s: _Section) -> FeedSpec:
 
 def _structure(s: _Section) -> StructureSpec:
     spec = StructureSpec(
-        max_diameter_m=s.number("max_diameter_mm", gt=0) * M_PER_MM,
+        max_diameter_m=mm_to_m(s.number("max_diameter_mm", gt=0)),
         tank_material=s.choice("tank_material", materials.CATALOG, "al6061-t6"),
         bottle_material=s.choice("bottle_material", materials.CATALOG, "ti6al4v"),
         yield_factor=s.number("yield_safety_factor", 1.5, ge=1),
         ultimate_factor=s.number("ultimate_safety_factor", 2.0, ge=1),
-        min_wall_m=s.number("min_wall_mm", 1.0, gt=0) * M_PER_MM,
+        min_wall_m=mm_to_m(s.number("min_wall_mm", 1.0, gt=0)),
     )
     s.finish()
     return spec

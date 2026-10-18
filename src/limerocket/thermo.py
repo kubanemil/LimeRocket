@@ -12,7 +12,7 @@ from scipy.interpolate import RectBivariateSpline
 from scipy.optimize import minimize_scalar
 
 from limerocket.propellants import Propellant
-from limerocket.units import G0_M_S2, PA_PER_BAR
+from limerocket.units import G0_M_S2, KG_PER_G, bar_to_pa, pa_to_bar
 
 BACKEND = f"NASA CEA {cea.__version__} (Python bindings)"
 
@@ -89,10 +89,6 @@ class Performance:
         return self.exit.pressure_pa
 
     @property
-    def exhaust_velocity_m_s(self) -> float:
-        return self.exit.mach * self.exit.sonic_velocity_m_s
-
-    @property
     def isp_vacuum_s(self) -> float:
         return self.c_star_m_s * self.cf_vacuum / G0_M_S2
 
@@ -101,6 +97,17 @@ class Performance:
 
     def isp_s(self, ambient_pa: float) -> float:
         return self.c_star_m_s * self.cf(ambient_pa) / G0_M_S2
+
+
+def unknown_species(names: list[str]) -> list[str]:
+    """Names that are not in CEA's thermodynamic database."""
+    missing = []
+    for name in names:
+        try:
+            cea.Mixture([name])
+        except Exception:  # the binding raises a bare Exception when a name is unknown
+            missing.append(name)
+    return missing
 
 
 @functools.lru_cache(maxsize=32)
@@ -140,7 +147,7 @@ def solve(
     enthalpy = (
         mixture.calc_property(cea.ENTHALPY, weights, np.array(reactants.temperatures_k)) / cea.R
     )
-    pc_bar = chamber_pressure_pa / PA_PER_BAR
+    pc_bar = pa_to_bar(chamber_pressure_pa)
     station: dict[str, object] = {"hc": enthalpy, "iac": True}
     if exit_pressure_pa is not None:
         station["pi_p"] = [chamber_pressure_pa / exit_pressure_pa]
@@ -158,9 +165,9 @@ def solve(
 
     def state(i: int) -> FlowState:
         return FlowState(
-            pressure_pa=float(solution.P[i]) * PA_PER_BAR,
+            pressure_pa=bar_to_pa(float(solution.P[i])),
             temperature_k=float(solution.T[i]),
-            molar_mass_kg_mol=float(solution.MW[i]) * 1e-3,
+            molar_mass_kg_mol=float(solution.MW[i]) * KG_PER_G,
             gamma=float(solution.gamma_s[i]),
             density_kg_m3=float(solution.density[i]),
             sonic_velocity_m_s=float(solution.sonic_velocity[i]),

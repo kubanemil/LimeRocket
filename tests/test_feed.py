@@ -64,14 +64,42 @@ def test_closed_form_bottle_size_lands_on_the_dropout_pressure_at_burnout(lime1)
     assert burn.bottle_pressure_pa[-1] == pytest.approx(p.regulator_dropout_pa, rel=0.01)
 
 
+def undersized(lime1, fraction=0.5):
+    p = lime1.pressurisation
+    return dataclasses.replace(p, bottle_volume_m3=fraction * p.bottle_volume_m3)
+
+
 def test_undersized_bottle_drops_out_and_the_burn_finishes_in_blowdown(lime1):
-    p = dataclasses.replace(
-        lime1.pressurisation, bottle_volume_m3=0.5 * lime1.pressurisation.bottle_volume_m3
+    burn = simulate_burn(
+        lime1.engine, undersized(lime1), lime1.oxidizer_load, lime1.fuel_load, 60.0
     )
-    burn = simulate_burn(lime1.engine, p, lime1.oxidizer_load, lime1.fuel_load, 60.0)
     assert burn.dropout_time_s is not None
     assert burn.dropout_time_s < burn.burn_time_s
     after = burn.time_s > burn.dropout_time_s
     assert np.all(np.diff(burn.chamber_pressure_pa[after]) < 0)
     assert burn.burn_time_s > lime1.burn.burn_time_s
     assert np.allclose(burn.pressurant_mass_kg, burn.pressurant_mass_kg[0], rtol=1e-6)
+
+
+def test_regulator_dropout_never_lifts_tank_pressure_above_the_set_point(lime1):
+    # Regression: dropout used to mix bottle and ullage gas at once, a 1.2 bar step up.
+    p_set = lime1.pressurisation.tank_pressure_pa
+    burn = simulate_burn(
+        lime1.engine, undersized(lime1, 0.3), lime1.oxidizer_load, lime1.fuel_load, 60.0
+    )
+    assert burn.dropout_time_s is not None
+    tank = burn.oxidizer_tank_pressure_pa
+    assert tank.max() <= p_set * (1 + 1e-12)
+    assert burn.chamber_pressure_pa.max() <= lime1.spec.engine.chamber_pressure_pa * (1 + 1e-6)
+    assert np.all(np.diff(tank) <= 1e-6 * p_set)
+    margin = lime1.pressurisation.regulator_dropout_pa - p_set
+    after = burn.time_s >= burn.dropout_time_s
+    assert np.allclose(burn.bottle_pressure_pa[after] - tank[after], margin, rtol=1e-9)
+
+
+def test_burn_stops_at_the_time_limit_even_after_dropout(lime1):
+    # Regression: the post-dropout phase used to get the whole time limit again.
+    burn = simulate_burn(lime1.engine, undersized(lime1), lime1.oxidizer_load, lime1.fuel_load, 4.0)
+    assert burn.dropout_time_s is not None and burn.dropout_time_s < 4.0
+    assert burn.burn_time_s == pytest.approx(4.0)
+    assert burn.depleted.startswith("none")

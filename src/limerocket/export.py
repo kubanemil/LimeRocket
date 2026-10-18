@@ -13,23 +13,27 @@ import numpy.typing as npt
 from limerocket import __version__
 from limerocket.chamber import ThrustChamber
 from limerocket.design import Design
-from limerocket.units import P_STANDARD_PA
+from limerocket.units import P_STANDARD_PA, m_to_mm, pa_to_bar
 
 FloatArray = npt.NDArray[np.float64]
-MM_PER_M = 1000.0
 STL_SEGMENTS = 64
 ENG_POINTS = 60
 ENG_RAMP_S = 0.01  # RASP curves start and end at zero thrust; 10 ms edges stand in for transients
 
 
 def outer_wall(chamber: ThrustChamber) -> tuple[FloatArray, FloatArray]:
-    """Inner contour offset outward along its normal by the wall thickness."""
+    """Inner contour offset outward along its normal by the wall thickness.
+
+    Where the wall is thicker than the throat's radius of curvature the offset folds back on
+    itself; points behind the furthest x reached so far are dropped, which removes the loop.
+    """
     x, r = chamber.x_m, chamber.r_m
     dx, dr = np.gradient(x), np.gradient(r)
     norm = np.hypot(dx, dr)
     xo = x - chamber.wall_thickness_m * dr / norm
     ro = r + chamber.wall_thickness_m * dx / norm
-    keep = np.concatenate([[True], np.diff(xo) > 0.0])
+    reached = np.maximum.accumulate(xo)
+    keep = np.concatenate([[True], xo[1:] > reached[:-1]])
     return xo[keep], ro[keep]
 
 
@@ -40,7 +44,7 @@ def write_contour_csv(path: Path, chamber: ThrustChamber) -> None:
         writer = csv.writer(fh)
         writer.writerow(["x_mm", "inner_radius_mm", "outer_radius_mm"])
         for x, r, o in zip(chamber.x_m, chamber.r_m, outer, strict=True):
-            writer.writerow([f"{x * MM_PER_M:.4f}", f"{r * MM_PER_M:.4f}", f"{o * MM_PER_M:.4f}"])
+            writer.writerow([f"{m_to_mm(x):.4f}", f"{m_to_mm(r):.4f}", f"{m_to_mm(o):.4f}"])
 
 
 def _dxf_polyline(points: list[tuple[float, float]], layer: str, closed: bool = False) -> list[str]:
@@ -54,10 +58,10 @@ def _dxf_polyline(points: list[tuple[float, float]], layer: str, closed: bool = 
 def write_dxf(path: Path, chamber: ThrustChamber) -> None:
     """AutoCAD R12 ASCII DXF of the half-section in millimetres: wall profile plus centreline."""
     xo, ro = outer_wall(chamber)
-    inner = list(zip(chamber.x_m * MM_PER_M, chamber.r_m * MM_PER_M, strict=True))
-    outer = list(zip(xo * MM_PER_M, ro * MM_PER_M, strict=True))
+    inner = list(zip(m_to_mm(chamber.x_m), m_to_mm(chamber.r_m), strict=True))
+    outer = list(zip(m_to_mm(xo), m_to_mm(ro), strict=True))
     profile = inner + outer[::-1]
-    x0, x1 = float(chamber.x_m[0] * MM_PER_M), float(chamber.x_m[-1] * MM_PER_M)
+    x0, x1 = m_to_mm(float(chamber.x_m[0])), m_to_mm(float(chamber.x_m[-1]))
     lines = ["0", "SECTION", "2", "HEADER", "9", "$ACADVER", "1", "AC1009", "0", "ENDSEC"]
     lines += ["0", "SECTION", "2", "ENTITIES"]
     lines += _dxf_polyline(profile, "WALL", closed=True)
@@ -90,8 +94,8 @@ def revolve(x: FloatArray, r: FloatArray, segments: int = STL_SEGMENTS) -> Float
 def wall_solid(chamber: ThrustChamber, segments: int = STL_SEGMENTS) -> FloatArray:
     """Watertight wall: inner contour downstream, outer contour back upstream, revolved."""
     xo, ro = outer_wall(chamber)
-    x = np.concatenate([chamber.x_m, xo[::-1]]) * MM_PER_M
-    r = np.concatenate([chamber.r_m, ro[::-1]]) * MM_PER_M
+    x = m_to_mm(np.concatenate([chamber.x_m, xo[::-1]]))
+    r = m_to_mm(np.concatenate([chamber.r_m, ro[::-1]]))
     return revolve(x, r, segments)
 
 
@@ -144,7 +148,7 @@ def write_eng(path: Path, design: Design) -> None:
         f"; {spec.name}: {spec.engine.oxidizer.name} / {spec.engine.fuel.name}",
         f"; LimeRocket {__version__}, sea-level thrust, liquid pressure-fed",
         (
-            f"{code} {spec.structure.max_diameter_m * MM_PER_M:.0f} {length * MM_PER_M:.0f} P "
+            f"{code} {m_to_mm(spec.structure.max_diameter_m):.0f} {m_to_mm(length):.0f} P "
             f"{expelled:.4f} {propulsion:.4f} LimeRocket"
         ),
     ]
@@ -168,16 +172,16 @@ def write_burn_csv(path: Path, design: Design) -> None:
     pa = design.ambient_pa
     columns = {
         "time_s": burn.time_s,
-        "chamber_pressure_bar": burn.chamber_pressure_pa / 1e5,
+        "chamber_pressure_bar": pa_to_bar(burn.chamber_pressure_pa),
         "thrust_n": burn.thrust_n(pa),
         "thrust_vacuum_n": burn.thrust_vacuum_n,
         "isp_s": burn.isp_s(pa),
         "oxidizer_flow_kg_s": burn.oxidizer_flow_kg_s,
         "fuel_flow_kg_s": burn.fuel_flow_kg_s,
         "mixture_ratio": burn.mixture_ratio,
-        "oxidizer_tank_bar": burn.oxidizer_tank_pressure_pa / 1e5,
-        "fuel_tank_bar": burn.fuel_tank_pressure_pa / 1e5,
-        "bottle_bar": burn.bottle_pressure_pa / 1e5,
+        "oxidizer_tank_bar": pa_to_bar(burn.oxidizer_tank_pressure_pa),
+        "fuel_tank_bar": pa_to_bar(burn.fuel_tank_pressure_pa),
+        "bottle_bar": pa_to_bar(burn.bottle_pressure_pa),
         "oxidizer_mass_kg": burn.oxidizer_mass_kg,
         "fuel_mass_kg": burn.fuel_mass_kg,
     }

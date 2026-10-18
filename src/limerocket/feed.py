@@ -243,31 +243,40 @@ def _which_depleted(t_events: list[FloatArray]) -> str | None:
     return None
 
 
+def _bottle_state(p: Pressurisation) -> tuple[float, Callable[[float], tuple[float, float]]]:
+    """Initial bottle gas mass and (pressure, temperature) as a function of remaining mass.
+
+    The gas left in an adiabatic bottle expands isentropically, whatever leaves it.
+    """
+    gamma = p.gas.gamma
+    t0 = p.gas_temperature_k
+    mb0 = p.bottle_pressure_pa * p.bottle_volume_m3 / (p.gas.gas_constant_j_kg_k * t0)
+
+    def state(mb: float) -> tuple[float, float]:
+        ratio = max(mb, 0.0) / mb0
+        return p.bottle_pressure_pa * ratio**gamma, t0 * ratio ** (gamma - 1.0)
+
+    return mb0, state
+
+
 def _regulated_phase(
     engine: Engine, p: Pressurisation, oxidizer: TankLoad, fuel: TankLoad, max_time_s: float
 ) -> _Phase:
-    """Tanks held at the set pressure; the bottle empties isentropically into the ullage."""
-    gas = p.gas
-    r_gas = gas.gas_constant_j_kg_k
+    """Tanks held at the set pressure while the bottle stays above the dropout pressure."""
+    r_gas = p.gas.gas_constant_j_kg_k
     t0 = p.gas_temperature_k
     p_set = p.tank_pressure_pa
-    vb = p.bottle_volume_m3
-    mb0 = p.bottle_pressure_pa * vb / (r_gas * t0)
-
-    def bottle(mb: float) -> tuple[float, float]:
-        ratio = max(mb, 0.0) / mb0
-        return p.bottle_pressure_pa * ratio**gas.gamma, t0 * ratio ** (gas.gamma - 1.0)
-
-    rho_ox = oxidizer.branch.fluid.density_kg_m3
-    rho_fuel = fuel.branch.fluid.density_kg_m3
+    mb0, bottle = _bottle_state(p)
+    op = operate(engine, oxidizer.branch, fuel.branch, p_set, p_set)
+    ullage_rate_ox = op.oxidizer_flow_kg_s / oxidizer.branch.fluid.density_kg_m3
+    ullage_rate_fuel = op.fuel_flow_kg_s / fuel.branch.fluid.density_kg_m3
 
     def rhs(_t: float, y: FloatArray) -> FloatArray:
-        op = operate(engine, oxidizer.branch, fuel.branch, p_set, p_set)
         _, tb = bottle(y[2])
         # Throttling an ideal gas is isenthalpic, so gas enters the ullage at bottle temperature;
         # the energy balance at constant ullage pressure then gives mdot_gas = p dV/dt / (R Tb).
-        gas_ox = p_set * op.oxidizer_flow_kg_s / (rho_ox * r_gas * tb)
-        gas_fuel = p_set * op.fuel_flow_kg_s / (rho_fuel * r_gas * tb)
+        gas_ox = p_set * ullage_rate_ox / (r_gas * tb)
+        gas_fuel = p_set * ullage_rate_fuel / (r_gas * tb)
         return np.array(
             [-op.oxidizer_flow_kg_s, -op.fuel_flow_kg_s, -(gas_ox + gas_fuel), gas_ox, gas_fuel]
         )
@@ -312,32 +321,84 @@ def _regulated_phase(
     )
 
 
-_GasSystem = tuple[tuple[int, ...], float, float, float]
+def _dropout_phase(
+    engine: Engine,
+    p: Pressurisation,
+    oxidizer: TankLoad,
+    fuel: TankLoad,
+    *,
+    start: FloatArray,
+    t_start: float,
+    max_time_s: float,
+) -> _Phase:
+    """Regulator wide open: tank pressure trails the bottle by the regulator's minimum drop.
+
+    Gas keeps flowing from the bottle, so tank pressure falls smoothly from the set point and
+    never rises above it. Holding p_tank = p_bottle - dp in the adiabatic energy balances of
+    the bottle and the shared ullage gives mdot_gas = p_u dVu/dt / (R Tb (1 + Vu / Vb)).
+    """
+    r_gas = p.gas.gas_constant_j_kg_k
+    vb = p.bottle_volume_m3
+    margin = p.regulator_dropout_pa - p.tank_pressure_pa
+    _, bottle = _bottle_state(p)
+    rho_ox = oxidizer.branch.fluid.density_kg_m3
+    rho_fuel = fuel.branch.fluid.density_kg_m3
+
+    def tank_pressure(mb: float) -> float:
+        return bottle(mb)[0] - margin
+
+    def rhs(_t: float, y: FloatArray) -> FloatArray:
+        m_ox, m_fuel, mb, _ = y
+        pb, tb = bottle(mb)
+        pu = pb - margin
+        op = operate(engine, oxidizer.branch, fuel.branch, pu, pu)
+        vu = oxidizer.ullage_m3(m_ox) + fuel.ullage_m3(m_fuel)
+        dvu = op.oxidizer_flow_kg_s / rho_ox + op.fuel_flow_kg_s / rho_fuel
+        gas = pu * dvu / (r_gas * tb * (1.0 + vu / vb))
+        return np.array([-op.oxidizer_flow_kg_s, -op.fuel_flow_kg_s, -gas, gas])
+
+    m_ox, m_fuel, mb, m_ull_ox, m_ull_fuel = start
+    sol = solve_ivp(
+        rhs,
+        (t_start, max_time_s),
+        np.array([m_ox, m_fuel, mb, m_ull_ox + m_ull_fuel]),
+        events=[_depletion_event(oxidizer, 0), _depletion_event(fuel, 1)],
+        dense_output=True,
+        rtol=ODE_RTOL,
+        atol=ODE_ATOL,
+    )
+    times = np.linspace(t_start, float(sol.t[-1]), SAMPLES_PER_PHASE)
+    assert sol.sol is not None
+    y = sol.sol(times)
+    pu = np.array([tank_pressure(m) for m in y[2]])
+    return _Phase(
+        time=times,
+        m_ox=y[0],
+        m_fuel=y[1],
+        p_ox=pu,
+        p_fuel=pu,
+        p_bottle=pu + margin,
+        gas=y[2] + y[3],
+        end=sol.y[:, -1],
+        depleted=_which_depleted(sol.t_events),
+    )
 
 
 def _blowdown_phase(
-    engine: Engine,
-    *,
-    exponent: float,
-    systems: list[_GasSystem],
-    oxidizer: TankLoad,
-    fuel: TankLoad,
-    liquid0: FloatArray,
-    gas_mass_kg: float,
-    t_start: float,
-    max_time_s: float,
-    shared_with_bottle: bool,
+    engine: Engine, p: Pressurisation, oxidizer: TankLoad, fuel: TankLoad, max_time_s: float
 ) -> _Phase:
-    """Closed gas volumes expanding polytropically, p V^n = const, as liquid leaves."""
-    tanks = (oxidizer, fuel)
+    """Each tank's ullage expands polytropically, p V^n = const, as its liquid leaves."""
+    n = p.polytropic_exponent
+    p0 = p.tank_pressure_pa
+    v_ox0 = oxidizer.ullage_m3(oxidizer.loaded_mass_kg)
+    v_fuel0 = fuel.ullage_m3(fuel.loaded_mass_kg)
+    gas_mass = p0 * (v_ox0 + v_fuel0) / (p.gas.gas_constant_j_kg_k * p.gas_temperature_k)
 
     def pressures(y: FloatArray) -> tuple[float, float]:
-        out = [0.0, 0.0]
-        for members, fixed_volume, volume0, p0 in systems:
-            volume = fixed_volume + sum(tanks[i].ullage_m3(y[i]) for i in members)
-            for i in members:
-                out[i] = p0 * (volume0 / volume) ** exponent
-        return out[0], out[1]
+        return (
+            p0 * (v_ox0 / oxidizer.ullage_m3(y[0])) ** n,
+            p0 * (v_fuel0 / fuel.ullage_m3(y[1])) ** n,
+        )
 
     def rhs(_t: float, y: FloatArray) -> FloatArray:
         op = operate(engine, oxidizer.branch, fuel.branch, *pressures(y))
@@ -345,14 +406,14 @@ def _blowdown_phase(
 
     sol = solve_ivp(
         rhs,
-        (t_start, t_start + max_time_s),
-        liquid0,
+        (0.0, max_time_s),
+        np.array([oxidizer.loaded_mass_kg, fuel.loaded_mass_kg]),
         events=[_depletion_event(oxidizer, 0), _depletion_event(fuel, 1)],
         dense_output=True,
         rtol=ODE_RTOL,
         atol=ODE_ATOL,
     )
-    times = np.linspace(t_start, float(sol.t[-1]), SAMPLES_PER_PHASE)
+    times = np.linspace(0.0, float(sol.t[-1]), SAMPLES_PER_PHASE)
     assert sol.sol is not None
     y = sol.sol(times)
     p_pairs = np.array([pressures(y[:, k]) for k in range(times.size)])
@@ -362,8 +423,8 @@ def _blowdown_phase(
         m_fuel=y[1],
         p_ox=p_pairs[:, 0],
         p_fuel=p_pairs[:, 1],
-        p_bottle=p_pairs[:, 0] if shared_with_bottle else np.full_like(times, np.nan),
-        gas=np.full_like(times, gas_mass_kg),
+        p_bottle=np.full_like(times, np.nan),
+        gas=np.full_like(times, gas_mass),
         end=sol.y[:, -1],
         depleted=_which_depleted(sol.t_events),
     )
@@ -376,57 +437,27 @@ def simulate_burn(
     fuel: TankLoad,
     max_time_s: float,
 ) -> BurnResult:
+    """Integrate the burn from ignition until a tank empties or `max_time_s` passes."""
     p = pressurisation
-    r_gas = p.gas.gas_constant_j_kg_k
-    phases: list[_Phase] = []
     dropout_time: float | None = None
-
     if p.mode is FeedMode.REGULATED:
         regulated = _regulated_phase(engine, p, oxidizer, fuel, max_time_s)
-        phases.append(regulated)
+        phases = [regulated]
         if regulated.depleted is None and regulated.time[-1] < max_time_s:
             dropout_time = float(regulated.time[-1])
-            m_ox, m_fuel, m_bottle, m_ull_ox, m_ull_fuel = regulated.end
-            pb = float(regulated.p_bottle[-1])
-            v_ox, v_fuel = oxidizer.ullage_m3(m_ox), fuel.ullage_m3(m_fuel)
-            volume0 = p.bottle_volume_m3 + v_ox + v_fuel
-            # Adiabatic mixing at fixed total volume conserves U = pV / (gamma - 1).
-            p_mix = (pb * p.bottle_volume_m3 + p.tank_pressure_pa * (v_ox + v_fuel)) / volume0
             phases.append(
-                _blowdown_phase(
+                _dropout_phase(
                     engine,
-                    exponent=p.polytropic_exponent,
-                    systems=[((0, 1), p.bottle_volume_m3, volume0, p_mix)],
-                    oxidizer=oxidizer,
-                    fuel=fuel,
-                    liquid0=np.array([m_ox, m_fuel]),
-                    gas_mass_kg=float(m_bottle + m_ull_ox + m_ull_fuel),
+                    p,
+                    oxidizer,
+                    fuel,
+                    start=regulated.end,
                     t_start=dropout_time,
                     max_time_s=max_time_s,
-                    shared_with_bottle=True,
                 )
             )
     else:
-        v_ox = oxidizer.ullage_m3(oxidizer.loaded_mass_kg)
-        v_fuel = fuel.ullage_m3(fuel.loaded_mass_kg)
-        gas_mass = p.tank_pressure_pa * (v_ox + v_fuel) / (r_gas * p.gas_temperature_k)
-        phases.append(
-            _blowdown_phase(
-                engine,
-                exponent=p.polytropic_exponent,
-                systems=[
-                    ((0,), 0.0, v_ox, p.tank_pressure_pa),
-                    ((1,), 0.0, v_fuel, p.tank_pressure_pa),
-                ],
-                oxidizer=oxidizer,
-                fuel=fuel,
-                liquid0=np.array([oxidizer.loaded_mass_kg, fuel.loaded_mass_kg]),
-                gas_mass_kg=gas_mass,
-                t_start=0.0,
-                max_time_s=max_time_s,
-                shared_with_bottle=False,
-            )
-        )
+        phases = [_blowdown_phase(engine, p, oxidizer, fuel, max_time_s)]
 
     fields = ("time", "m_ox", "m_fuel", "p_ox", "p_fuel", "p_bottle", "gas")
     data = {

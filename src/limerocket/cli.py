@@ -15,6 +15,7 @@ from limerocket.plots import overview_figure, to_svg
 from limerocket.report import html_report, terminal_summary
 from limerocket.spec import SpecError, load
 from limerocket.thermo import ThermoError
+from limerocket.units import PA_PER_MPA
 
 
 def write_outputs(result: Design, out: Path) -> list[str]:
@@ -51,7 +52,9 @@ def _catalog(_args: argparse.Namespace) -> int:
         print(f"  {p.key:10s} {p.name}, {p.role}, {p.density_kg_m3:g} kg/m3")
     print("\nMaterials (key: name, yield / ultimate):")
     for m in materials.CATALOG.values():
-        strength = f"{m.yield_strength_pa / 1e6:g} / {m.ultimate_strength_pa / 1e6:g} MPa"
+        strength = (
+            f"{m.yield_strength_pa / PA_PER_MPA:g} / {m.ultimate_strength_pa / PA_PER_MPA:g} MPa"
+        )
         print(f"  {m.key:10s} {m.name}, {strength}")
     return 0
 

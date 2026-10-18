@@ -9,12 +9,12 @@ engine:
   design_ambient_pressure_bar: 1.01325
   oxidizer: lox
   fuel: ethanol75
-  mixture_ratio: optimize
+  mixture_ratio: auto
   l_star_m: 1.2
   contraction_ratio: auto
   convergence_half_angle_deg: 30
   c_star_efficiency: 0.92
-  thrust_coefficient_efficiency: 0.98
+  thrust_coefficient_efficiency: 0.99
   wall_material: ss316
   injector:
     pressure_drop_fraction: 0.20

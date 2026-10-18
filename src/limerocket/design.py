@@ -22,11 +22,12 @@ from limerocket.feed import (
     simulate_burn,
 )
 from limerocket.hydraulics import Branch, Fluid, Orifices
+from limerocket.nozzle import IdealGasCheck, divergence_efficiency, ideal_gas_check, rao_angles_deg
 from limerocket.spec import DesignSpec
 from limerocket.tanks import Vessel, size_vessel
 from limerocket.thermo import Performance
 from limerocket.trajectory import Flight, Vehicle, fly
-from limerocket.units import G0_M_S2, PA_PER_BAR, mm_to_m
+from limerocket.units import G0_M_S2, m_to_mm, mm_to_m, pa_to_bar
 
 INTERNAL_FIT_FRACTION = 0.9  # tanks and bottle sit inside the airframe with 10 % radial clearance
 SUMMERFIELD_SEPARATION_RATIO = 0.4  # pe/pa below which nozzle flow separates (Sutton ch. 3)
@@ -85,6 +86,8 @@ class Design:
     mass_flow_kg_s: float
     c_star_m_s: float
     cf_vacuum: float
+    divergence_efficiency: float
+    ideal_gas: IdealGasCheck
     injector: Injector
     oxidizer_line_drop_pa: float
     fuel_line_drop_pa: float
@@ -230,8 +233,8 @@ def _pressurisation(
     dropout = tank_pressure + feed.regulator_dropout_margin_pa
     if feed.bottle_pressure_pa <= dropout:
         raise DesignError(
-            f"bottle pressure {feed.bottle_pressure_pa / PA_PER_BAR:.0f} bar must exceed the "
-            f"regulator dropout pressure {dropout / PA_PER_BAR:.1f} bar"
+            f"bottle pressure {pa_to_bar(feed.bottle_pressure_pa):.0f} bar must exceed the "
+            f"regulator dropout pressure {pa_to_bar(dropout):.1f} bar"
         )
     expelled = sum(t.usable_mass_kg / t.branch.fluid.density_kg_m3 for t in (oxidizer, fuel))
     volume = feed.bottle_volume_m3 or (1.0 + feed.pressurant_margin) * bottle_volume_m3(
@@ -315,7 +318,7 @@ def _warnings(design: Design) -> list[str]:
     for label, side in (("oxidizer", design.injector.oxidizer), ("fuel", design.injector.fuel)):
         if side.orifices.diameter_m < MIN_ORIFICE_DIAMETER_M:
             out.append(
-                f"{label} orifices are {side.orifices.diameter_m * 1e3:.2f} mm; fewer, larger "
+                f"{label} orifices are {m_to_mm(side.orifices.diameter_m):.2f} mm; fewer, larger "
                 "orifices are easier to drill"
             )
     if flight.liftoff_thrust_to_weight < MIN_LIFTOFF_THRUST_TO_WEIGHT:
@@ -368,7 +371,9 @@ def _design_once(spec: DesignSpec, mixture_ratio: float, ideal: Performance) -> 
     eng, st, veh = spec.engine, spec.structure, spec.vehicle
     pc, pa = eng.chamber_pressure_pa, eng.design_ambient_pressure_pa
 
-    cf_vacuum = eng.cf_efficiency * ideal.cf_vacuum
+    divergence = divergence_efficiency(rao_angles_deg(ideal.area_ratio)[1])
+    cf_efficiency = divergence * eng.cf_efficiency
+    cf_vacuum = cf_efficiency * ideal.cf_vacuum
     c_star = eng.c_star_efficiency * ideal.c_star_m_s
     throat_area = eng.thrust_n / (cf_vacuum * pc - pa * ideal.area_ratio)
     mass_flow = pc * throat_area / c_star
@@ -387,8 +392,8 @@ def _design_once(spec: DesignSpec, mixture_ratio: float, ideal: Performance) -> 
     )
     if chamber.outer_diameter_m > st.max_diameter_m:
         raise DesignError(
-            f"thrust chamber is {chamber.outer_diameter_m * 1e3:.0f} mm across but the airframe "
-            f"allows {st.max_diameter_m * 1e3:.0f} mm; lower the contraction ratio or raise Pc"
+            f"thrust chamber is {m_to_mm(chamber.outer_diameter_m):.0f} mm across but the airframe "
+            f"allows {m_to_mm(st.max_diameter_m):.0f} mm; lower the contraction ratio or raise Pc"
         )
 
     oxidizer_flow = mass_flow * mixture_ratio / (1.0 + mixture_ratio)
@@ -398,7 +403,7 @@ def _design_once(spec: DesignSpec, mixture_ratio: float, ideal: Performance) -> 
         throat_area_m2=throat_area,
         area_ratio=ideal.area_ratio,
         c_star_efficiency=eng.c_star_efficiency,
-        cf_efficiency=eng.cf_efficiency,
+        cf_efficiency=cf_efficiency,
         performance=thermo.performance_map(
             eng.oxidizer, eng.fuel, ideal.area_ratio, mixture_ratio, pc
         ),
@@ -462,6 +467,13 @@ def _design_once(spec: DesignSpec, mixture_ratio: float, ideal: Performance) -> 
         mass_flow_kg_s=mass_flow,
         c_star_m_s=c_star,
         cf_vacuum=cf_vacuum,
+        divergence_efficiency=divergence,
+        ideal_gas=ideal_gas_check(
+            ideal.chamber.gamma,
+            ideal.chamber.molar_mass_kg_mol,
+            ideal.chamber.temperature_k,
+            ideal.area_ratio,
+        ),
         injector=f.injector,
         oxidizer_line_drop_pa=f.oxidizer_line_drop_pa,
         fuel_line_drop_pa=f.fuel_line_drop_pa,
@@ -494,13 +506,17 @@ def _search_apogee(
     spec: DesignSpec, mixture_ratio: float, ideal: Performance, target: float
 ) -> tuple[Design, ApogeeSearch]:
     """Bracket the burn time that reaches `target`, then refine with Brent's method."""
-    cache: dict[float, float] = {}
+    designs: dict[float, Design] = {}
+
+    def trial(burn_time: float) -> Design:
+        if burn_time not in designs:
+            designs[burn_time] = _design_once(
+                _with_burn_time(spec, burn_time), mixture_ratio, ideal
+            )
+        return designs[burn_time]
 
     def apogee(burn_time: float) -> float:
-        if burn_time not in cache:
-            trial = _design_once(_with_burn_time(spec, burn_time), mixture_ratio, ideal)
-            cache[burn_time] = trial.flight.apogee_m
-        return cache[burn_time]
+        return trial(burn_time).flight.apogee_m
 
     t0 = spec.engine.burn_time_s
     lo_limit, hi_limit = BURN_TIME_BOUNDS[0] * t0, BURN_TIME_BOUNDS[1] * t0
@@ -518,9 +534,9 @@ def _search_apogee(
         lo, hi = sorted((a, b))
         burn_time = float(brentq(lambda t: apogee(t) - target, lo, hi, xtol=1e-3 * t0))
     else:
-        burn_time = max(cache, key=lambda t: cache[t]) if step > 1.0 else min(cache)
-    final = _design_once(_with_burn_time(spec, burn_time), mixture_ratio, ideal)
-    return final, ApogeeSearch(target, reached, burn_time, len(cache) + 1)
+        burn_time = max(designs, key=apogee) if step > 1.0 else min(designs)
+    final = trial(burn_time)
+    return final, ApogeeSearch(target, reached, burn_time, len(designs))
 
 
 def design(spec: DesignSpec) -> Design:

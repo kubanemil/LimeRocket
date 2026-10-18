@@ -23,12 +23,12 @@ Run `limerocket catalog` to list the built-in propellants and materials.
 | `design_ambient_pressure_bar` | `1.01325` | The nozzle is optimally expanded to this pressure |
 | `oxidizer` | required | Catalog key (`lox`, `htp90`) or a custom propellant, see below |
 | `fuel` | required | Catalog key (`ethanol`, `ethanol75`, `ipa`, `rp1`, `methane`) or custom |
-| `mixture_ratio` | `optimize` | O/F by mass, or `optimize` for maximum Isp at the design point |
+| `mixture_ratio` | `auto` | O/F by mass; `auto` picks the O/F with maximum Isp at the design point |
 | `l_star_m` | `1.0` | Characteristic length, chamber volume / throat area |
 | `contraction_ratio` | `auto` | Ac/At; `auto` uses Ac/At = 8.0 Dt^-0.6 + 1.25 (Dt in cm) |
 | `convergence_half_angle_deg` | `30` | Convergent cone half-angle, 15 to 60 |
 | `c_star_efficiency` | `0.92` | Delivered c* / ideal c* |
-| `thrust_coefficient_efficiency` | `0.98` | Delivered vacuum Cf / ideal vacuum Cf |
+| `thrust_coefficient_efficiency` | `0.99` | Delivered / ideal vacuum Cf for losses other than divergence (friction, kinetics); the bell's (1 + cos theta_e) / 2 is applied on top |
 | `wall_material` | `ss316` | Chamber and nozzle wall material |
 | `injector.pressure_drop_fraction` | `0.20` | Minimum injector drop as a fraction of Pc |
 | `injector.oxidizer.discharge_coefficient` | `0.7` | Orifice Cd |
@@ -53,7 +53,6 @@ fuel:
 | `mode` | `regulated` | `regulated` (bottle and regulator) or `blowdown` (ullage only) |
 | `pressurant` | `helium` | `helium` or `nitrogen` |
 | `pressurant_temperature_k` | `293.15` | Initial gas temperature |
-| `polytropic_exponent` | `auto` | Gas expansion exponent; `auto` is the gas's gamma (adiabatic) |
 | `residual_fraction` | `0.03` | Unusable propellant, as a fraction of the usable load |
 | `lines.oxidizer.length_m` | required | Tank-to-injector line length |
 | `lines.oxidizer.inner_diameter_mm` | required | Line inner diameter |
@@ -76,6 +75,11 @@ Blowdown mode only:
 | Key | Default | Meaning |
 |---|---|---|
 | `blowdown_ratio` | `2.5` | Initial over final tank pressure |
+| `polytropic_exponent` | `auto` | Ullage expansion exponent, 1 (isothermal) to gamma; `auto` is the gas's gamma (adiabatic) |
+
+In regulated mode the bottle and ullage are adiabatic. Below the dropout pressure the
+regulator is wide open and the tanks trail the bottle by the dropout margin, so tank pressure
+falls smoothly from the set point.
 
 ## `structure`
 
