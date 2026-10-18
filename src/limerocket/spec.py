@@ -1,5 +1,3 @@
-"""Design spec: YAML in, validated frozen dataclasses (SI) out, with every problem reported."""
-
 from __future__ import annotations
 
 import itertools

@@ -1,5 +1,3 @@
-"""Propellant catalog: CEA composition plus the liquid properties the feed system needs."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass

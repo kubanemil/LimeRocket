@@ -1,4 +1,4 @@
-"""Constants and unit conversions. All internal quantities are SI; names carry their unit."""
+"""All internal quantities are SI; names carry their unit."""
 
 import numpy as np
 import numpy.typing as npt

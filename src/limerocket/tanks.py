@@ -1,5 +1,3 @@
-"""Thin-wall pressure vessels: cylinders with hemispherical heads, or spheres when they fit."""
-
 from __future__ import annotations
 
 import math

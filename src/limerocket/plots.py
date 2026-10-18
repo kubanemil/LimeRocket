@@ -1,5 +1,3 @@
-"""Report figures, drawn with matplotlib's object API (no pyplot global state)."""
-
 from __future__ import annotations
 
 import io

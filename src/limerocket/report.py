@@ -1,5 +1,3 @@
-"""Self-contained HTML design report and the terminal summary."""
-
 from __future__ import annotations
 
 import html

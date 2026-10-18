@@ -1,10 +1,9 @@
 # Spec reference
 
-A design spec is one YAML file. Every key carries its unit in the name. Anything not marked
-required has the default shown. `auto` (or leaving the key out) lets LimeRocket choose.
-Unknown keys are errors, and all problems are reported together.
-
-Run `limerocket catalog` to list the built-in propellants and materials.
+A spec is one YAML file, and each key carries its unit in its name. Keys not marked required
+take the default shown. `auto`, or leaving the key out, lets LimeRocket pick the value. Unknown
+keys are errors, and all problems are reported at once. `limerocket catalog` lists the built-in
+propellants and materials.
 
 ## Top level
 
@@ -28,7 +27,7 @@ Run `limerocket catalog` to list the built-in propellants and materials.
 | `contraction_ratio` | `auto` | Ac/At; `auto` uses Ac/At = 8.0 Dt^-0.6 + 1.25 (Dt in cm) |
 | `convergence_half_angle_deg` | `30` | Convergent cone half-angle, 15 to 60 |
 | `c_star_efficiency` | `0.92` | Delivered c* / ideal c* |
-| `thrust_coefficient_efficiency` | `0.99` | Delivered / ideal vacuum Cf for losses other than divergence (friction, kinetics); the bell's (1 + cos theta_e) / 2 is applied on top |
+| `thrust_coefficient_efficiency` | `0.99` | Delivered / ideal vacuum Cf for friction and kinetic losses; the bell's divergence factor is applied separately |
 | `wall_material` | `ss316` | Chamber and nozzle wall material |
 | `injector.pressure_drop_fraction` | `0.20` | Minimum injector drop as a fraction of Pc |
 | `injector.oxidizer.discharge_coefficient` | `0.7` | Orifice Cd |
@@ -77,9 +76,8 @@ Blowdown mode only:
 | `blowdown_ratio` | `2.5` | Initial over final tank pressure |
 | `polytropic_exponent` | `auto` | Ullage expansion exponent, 1 (isothermal) to gamma; `auto` is the gas's gamma (adiabatic) |
 
-In regulated mode the bottle and ullage are adiabatic. Below the dropout pressure the
-regulator is wide open and the tanks trail the bottle by the dropout margin, so tank pressure
-falls smoothly from the set point.
+Once the bottle falls below the set pressure plus `regulator_dropout_margin_bar`, the regulator
+is wide open and tank pressure trails the bottle by that margin.
 
 ## `structure`
 

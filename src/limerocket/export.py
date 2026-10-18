@@ -1,5 +1,3 @@
-"""Exports: chamber contour (CSV, DXF, STL), thrust curves (.eng, RocketPy CSV), time series."""
-
 from __future__ import annotations
 
 import csv
