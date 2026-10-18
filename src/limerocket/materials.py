@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from limerocket.units import PA_PER_MPA as MPA
+
 
 @dataclass(frozen=True)
 class Material:
@@ -19,8 +21,6 @@ class Material:
             self.yield_strength_pa / yield_factor, self.ultimate_strength_pa / ultimate_factor
         )
 
-
-MPA = 1.0e6
 
 CATALOG: dict[str, Material] = {
     m.key: m

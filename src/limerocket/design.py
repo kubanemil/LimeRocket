@@ -302,7 +302,7 @@ def _warnings(design: Design) -> list[str]:
             f"Area ratio {nozzle.area_ratio:.2f} is outside Rao's 80 % bell chart (4-100); "
             "wall angles are clamped to the nearest chart value"
         )
-    site_pa = _site_pressure_pa(spec)
+    site_pa = atmosphere.state(spec.vehicle.launch_altitude_m).pressure_pa
     pe_ratio = float(np.min(burn.exit_pressure_pa)) / site_pa
     if pe_ratio < SUMMERFIELD_SEPARATION_RATIO:
         out.append(
@@ -351,10 +351,6 @@ def _warnings(design: Design) -> list[str]:
             f"was set to the best found ({design.apogee_search.burn_time_s:.2f} s)"
         )
     return out
-
-
-def _site_pressure_pa(spec: DesignSpec) -> float:
-    return atmosphere.state(spec.vehicle.launch_altitude_m).pressure_pa
 
 
 def _min_injector_stiffness(design: Design) -> float:

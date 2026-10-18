@@ -100,7 +100,6 @@ class Performance:
 
 
 def unknown_species(names: list[str]) -> list[str]:
-    """Names that are not in CEA's thermodynamic database."""
     missing = []
     for name in names:
         try:

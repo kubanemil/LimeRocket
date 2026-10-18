@@ -1,5 +1,3 @@
-"""Thrust chamber geometry: L* volume, contraction, Rao throat arcs, wall and injector plate."""
-
 from __future__ import annotations
 
 import math
